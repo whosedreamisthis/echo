@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, model, models } from 'mongoose';
 
 // 1. Define an interface for TypeScript type-safety
 export interface IPost extends Document {
-    username: string;
+    userId: mongoose.Types.ObjectId;
     content: string;
     likes: number;
     createdAt: Date;
@@ -11,10 +11,10 @@ export interface IPost extends Document {
 
 // 2. Define the structural rules for MongoDB
 const PostSchema = new Schema<IPost>({
-    username: {
-        type: String,
-        required: [true, 'A username is required to post an Echo.'],
-        trim: true
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User', // This tells Mongoose WHICH collection to look into
+        required: [true, 'A post must belong to a specific user.']
     },
     content: {
         type: String,

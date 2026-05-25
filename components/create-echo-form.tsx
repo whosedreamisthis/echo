@@ -12,7 +12,7 @@ export function CreateEchoForm() {
         setLoading(true)
 
         // Hardcoding a test username for now until you add Auth
-        const result = await createEcho('test_user', content)
+        const result = await createEcho(content)
 
         setLoading(false)
         if (result.success) {
