@@ -6,17 +6,40 @@ import { Home, Search, PlusSquare, Bell, User } from "lucide-react";
 import { CreateEchoModal } from "@/components/create-echo-modal";
 import Link from "next/link";
 import Logo from "@/components/logo"; // Your modal component
+import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { label: "Home", href: "/", icon: Home, type: "link" },
-  { label: "Search", href: "/search", icon: Search, type: "link" },
-  { label: "Create", icon: PlusSquare, type: "button" }, // 1. Removed href, added type
-  { label: "Notifications", href: "/notifications", icon: Bell, type: "link" },
-  { label: "Profile", href: "/profile", icon: User, type: "link" },
+  { id: "home", label: "Home", href: "/", icon: Home, type: "link" },
+  {
+    id: "search",
+    label: "Search",
+    href: "/search",
+    icon: Search,
+    type: "link",
+  },
+  { id: "create", label: "Create", icon: PlusSquare, type: "button" }, // 1. Removed href, added type
+  {
+    id: "notifications",
+    label: "Notifications",
+    href: "/notifications",
+    icon: Bell,
+    type: "link",
+  },
+  {
+    id: "profile",
+    label: "Profile",
+    href: "/profile",
+    icon: User,
+    type: "link",
+  },
 ];
 
 export default function Navigation() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const pathname = usePathname();
+  const initialActive = pathname.split("/")[1] || "home";
+  console.log(initialActive);
+  const [active, setActive] = useState(initialActive);
 
   return (
     <>
@@ -41,8 +64,10 @@ export default function Navigation() {
             return (
               <button
                 key={item.label}
-                onClick={() => setIsCreateOpen(true)}
-                className="flex items-center gap-4 text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setIsCreateOpen(true);
+                }}
+                className={`flex items-center gap-4 ${active === item.id ? "text-primary" : "text-muted-foreground"}  hover:text-foreground`}
               >
                 <Icon className="h-6 w-6" />
                 <span className="hidden md:inline">{item.label}</span>
@@ -53,7 +78,8 @@ export default function Navigation() {
               <Link
                 key={item.label}
                 href={item.href ?? "/"}
-                className="flex items-center gap-4 text-muted-foreground hover:text-foreground"
+                className={`flex items-center gap-4 ${active === item.id ? "text-primary" : "text-muted-foreground"} hover:text-foreground`}
+                onClick={() => setActive(item.id)}
               >
                 <Icon className="h-6 w-6" />
                 <span className="hidden md:inline">{item.label}</span>
