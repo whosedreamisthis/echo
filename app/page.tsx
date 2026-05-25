@@ -1,11 +1,11 @@
 // app/page.tsx
-import { CreateEchoForm } from '@/components/create-echo-form'
+import { CreateEchoForm } from "@/components/create-echo-form";
 
 export default function Home() {
   return (
-      <main className="p-8">
-        <h1 className="text-3xl font-bold text-center mb-6">Echo</h1>
-        <CreateEchoForm />
-      </main>
-  )
+    <div className="w-full flex flex-col justify-start items-start">
+      <h1 className="text-3xl font-bold mb-6">Echo</h1>
+      <CreateEchoForm />
+    </div>
+  );
 }
