@@ -38,7 +38,7 @@ export default function Navigation() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const pathname = usePathname();
   const initialActive = pathname.split("/")[1] || "home";
-  console.log(initialActive);
+
   const [active, setActive] = useState(initialActive);
 
   return (
