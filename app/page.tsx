@@ -15,7 +15,8 @@ export default async function Home() {
 
   const { posts } = await getPosts(userId);
 
-  let mongoProfileImage = "/profile.jpg"; // Default fallback placeholder
+  let mongoProfileImage =
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
 
   // If a user is logged in, fetch their profile picture from MongoDB
   if (userId) {
@@ -26,7 +27,7 @@ export default async function Home() {
     const dbUser = await User.findOne({ clerkId: userId }).select(
       "profilePicture",
     );
-    if (dbUser?.profilePicture) {
+    if (dbUser?.profilePicture && dbUser.profilePicture !== "null") {
       mongoProfileImage = dbUser.profilePicture;
     }
   }

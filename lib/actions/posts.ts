@@ -29,16 +29,34 @@ export async function getPosts(currentClerkUserId?: string | null) {
   const posts = await Post.find(queryFilter)
     .sort({ createdAt: -1 })
     .limit(20)
-    .populate("userId", "username profilePicture");
+    .populate("userId", "username profilePicture")
+    .lean();
 
-  const plainPosts = posts.map((post) => {
-    const doc = post.toObject();
-    doc._id = doc._id.toString();
-
-    if (doc.userId && typeof doc.userId === "object") {
-      doc.userId._id = doc.userId._id.toString();
-    }
-    return doc;
+  const plainPosts = posts.map((post: any) => {
+    return {
+      ...post,
+      _id: post._id.toString(),
+      userId:
+        post.userId && typeof post.userId === "object"
+          ? {
+              _id: post.userId._id.toString(),
+              username: post.userId.username,
+              profilePicture: post.userId.profilePicture || null,
+            }
+          : post.userId,
+      // 👇 Don't forget to stringify arrays of ObjectIds and Dates too!
+      likes: post.likes?.map((id: any) => id.toString()) || [],
+      reposts: post.reposts?.map((id: any) => id.toString()) || [],
+      shares: post.shares?.map((id: any) => id.toString()) || [],
+      comments:
+        post.comments?.map((c: any) => ({
+          ...c,
+          _id: c._id.toString(),
+          userId: c.userId.toString(),
+          createdAt: c.createdAt.toISOString(),
+        })) || [],
+      createdAt: post.createdAt.toISOString(),
+    };
   });
 
   return { posts: plainPosts };
