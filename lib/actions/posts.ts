@@ -62,8 +62,6 @@ export async function getPosts(currentClerkUserId?: string | null) {
   return { posts: plainPosts };
 }
 
-// app/actions.ts
-
 export async function createEcho(content: string) {
   const { userId: clerkUserId } = await auth();
 
@@ -96,6 +94,69 @@ export async function createEcho(content: string) {
 
     revalidatePath("/");
     return { success: true, post: JSON.parse(JSON.stringify(newPost)) };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function toggleLike(postId: string) {
+  // 1. Authenticate the user via Clerk
+  const { userId: clerkUserId } = await auth();
+
+  if (!clerkUserId) {
+    return { success: false, error: "User not authenticated" };
+  }
+
+  try {
+    await connectDB();
+
+    // Ensure models are registered
+    const EnsureUserSchema = User || mongoose.model("User");
+    const EnsurePostSchema = Post || mongoose.model("Post");
+
+    // 2. Look up the local MongoDB user using the Clerk ID
+    let mongoUser = await User.findOne({ clerkId: clerkUserId });
+    if (!mongoUser) {
+      console.log(
+        `✨ Registering missing user profile for Clerk ID: ${clerkUserId}`,
+      );
+      mongoUser = await User.create({
+        clerkId: clerkUserId,
+        username: `demo_user_${Math.random().toString(36).substring(2, 7)}`,
+        email: `demo-${clerkUserId}@example.com`,
+        profilePicture: `https://api.dicebear.com/7.x/avataaars/svg?seed=${clerkUserId}`,
+      });
+    }
+
+    if (!mongoUser) {
+      return { success: false, error: "User profile not found in database." };
+    }
+
+    // 3. Find the post to check if the user has already liked it
+    const post = await Post.findById(postId);
+    if (!post) {
+      return { success: false, error: "Post not found." };
+    }
+
+    // Check if the user's MongoDB _id exists in the likes array
+    const hasLiked = post.likes.includes(mongoUser._id);
+
+    if (hasLiked) {
+      // 🍉 If already liked, remove them from the array ($pull)
+      await Post.findByIdAndUpdate(postId, {
+        $pull: { likes: mongoUser._id },
+      });
+    } else {
+      // 🍉 If not liked, atomically add them ($addToSet prevents duplicates)
+      await Post.findByIdAndUpdate(postId, {
+        $addToSet: { likes: mongoUser._id },
+      });
+    }
+
+    // 4. Revalidate the home path so the UI reflects the updated count immediately
+    revalidatePath("/");
+
+    return { success: true, hasLiked: !hasLiked };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

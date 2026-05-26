@@ -2,15 +2,25 @@
 import React, { useState } from "react";
 import { Heart, MessageCircle, SendHorizontal, RefreshCcw } from "lucide-react";
 import { PostType } from "@/lib/types";
+import { toggleLike } from "@/lib/actions/posts";
+import { useAuthStore } from "@/hooks/useAuthStore";
 
 const PostCardActions = ({ post }: { post: PostType }) => {
+  const currentMongoUserId = useAuthStore((state) => state.currentMongoUserId);
   const [hasLiked, setHasLiked] = useState<boolean>(
-    post.likes.includes(post.userId._id),
+    post.likes.includes(currentMongoUserId ?? ""),
   );
   const numLiked = post.likes.length;
   const numComments = post.comments.length;
   const numShares = post.shares.length;
   const numReposts = post.reposts.length;
+
+  const handleToggleLike = async () => {
+    const result = await toggleLike(post._id);
+    setHasLiked(result.hasLiked || false);
+    console.log("handleToggleLike result", result);
+    //setHasLiked((prev) => !prev);
+  };
 
   return (
     <div className="flex gap-3 items-center">
@@ -18,7 +28,7 @@ const PostCardActions = ({ post }: { post: PostType }) => {
         <Heart
           className={hasLiked ? "fill-red-500 text-red-500" : ""}
           size={16}
-          onClick={() => setHasLiked((prev) => !prev)}
+          onClick={handleToggleLike}
         />
         <p className="pt-0.25">{numLiked}</p>
       </div>

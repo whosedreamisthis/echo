@@ -9,10 +9,17 @@ import NewThread from "@/components/new-thread";
 import mongoose from "mongoose";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
+import AuthProvider from "@/components/auth-provider";
 
 export default async function Home() {
   const { userId } = await auth();
+  let currentMongoUserId = "";
 
+  if (userId) {
+    await connectDB();
+    const dbUser = await User.findOne({ clerkId: userId }).select("_id");
+    currentMongoUserId = dbUser?._id.toString() || "";
+  }
   const { posts } = await getPosts(userId);
 
   let mongoProfileImage =
@@ -37,7 +44,9 @@ export default async function Home() {
       {!userId && <DemoButton />}
       <div className="w-full max-w-xl border border-gray-200 rounded-2xl divide-y divide-gray-200 mb-5 overflow-hidden">
         <NewThread profileImage={mongoProfileImage} />
-        <Feed posts={posts} />
+        <AuthProvider userId={currentMongoUserId}>
+          <Feed posts={posts} />
+        </AuthProvider>
       </div>
     </div>
   );
