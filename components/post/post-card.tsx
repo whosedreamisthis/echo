@@ -35,7 +35,7 @@ const PostCard = ({ post }: { post: PostType }) => {
           </div>
           <p className="text-sm text-foreground">{post.content}</p>
         </div>
-        <PostCardActions post={post} />
+        <PostCardActions post={post} profileImage={imageSrc} />
       </div>
     </Link>
   );

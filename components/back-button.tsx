@@ -11,7 +11,10 @@ export default function BackButton({
   const router = useRouter();
 
   return (
-    <button onClick={() => router.back()} className="pb-5  text-white rounded">
+    <button
+      onClick={() => router.back()}
+      className="pb-5  text-white rounded cu cursor-pointer"
+    >
       <ArrowLeft className="text-muted-foreground" />
     </button>
   );

@@ -23,7 +23,7 @@ const PostPage = async ({
 
   const { post } = (await getPostById(postId)) as { post: PostType | null };
   const { posts: comments } = await getPostsWithParent(postId);
-  console.log("comments", comments);
+
   if (!post) {
     return <div>Post not found</div>;
   }
@@ -53,7 +53,7 @@ const PostPage = async ({
               </p>
             </div>
             <p className="text-sm">{post.content}</p>
-            <PostCardActions post={post} />
+            <PostCardActions post={post} profileImage={imageSrc} />
           </div>
           <div className="flex flex-col gap-5 pt-5">
             {comments?.map((comment: PostType) => {

@@ -8,7 +8,7 @@ import User from "@/models/User";
 import mongoose from "mongoose";
 import { PostType } from "@/lib/types";
 
-function getPlainPosts(posts) {
+function getPlainPosts(posts: PostType[]) {
   return posts.map((post: any) => {
     return {
       ...post,
@@ -79,8 +79,6 @@ export async function getPostsWithParent(parentId: string) {
     .populate("userId", "username profilePicture")
     .lean();
 
-  console.log("posts", posts);
-
   const plainPosts = getPlainPosts(posts);
 
   return { posts: plainPosts };
@@ -127,7 +125,10 @@ export async function getPostById(postId: string) {
   return { post: plainPost };
 }
 
-export async function createEcho(content: string) {
+export async function createEcho(
+  content: string,
+  parentId: string | null = null,
+) {
   const { userId: clerkUserId } = await auth();
 
   if (!clerkUserId) {
@@ -155,7 +156,17 @@ export async function createEcho(content: string) {
     const newPost = await Post.create({
       userId: mongoUser._id,
       content,
+      parentId,
     });
+
+    if (parentId) {
+      await Post.findByIdAndUpdate(parentId, {
+        $inc: { commentCount: 1 },
+      });
+
+      // Revalidate the individual dynamic post page if you have one (e.g., /echo/[id])
+      revalidatePath(`/posts/${parentId}`);
+    }
 
     revalidatePath("/");
     return { success: true, post: JSON.parse(JSON.stringify(newPost)) };

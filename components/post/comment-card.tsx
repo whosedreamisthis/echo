@@ -6,7 +6,6 @@ import { CommentType } from "@/lib/types";
 
 const CommentCard = ({ comment }: { comment: CommentType }) => {
   const { user, content, createdAt } = comment;
-  console.log("profilePicture", comment.user?.profilePicture);
   const imageSrc =
     user?.profilePicture && user.profilePicture !== "null"
       ? user.profilePicture
