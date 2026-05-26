@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { X, Paperclip, BarChart2, Smile } from "lucide-react";
 import { createEcho } from "@/lib/actions";
 import Image from "next/image";
+import TextareaAutosize from "react-textarea-autosize";
 
 interface CreateEchoModalProps {
   isOpen: boolean;
@@ -106,14 +107,17 @@ export function CreateEchoModal({
                 alt="Profile"
                 width={40}
                 height={40}
-                className="rounded-full bg-zinc-800 w-10 h-10  shrink-0"
+                className="rounded-full bg-zinc-800 w-10 h-10 shrink-0 object-cover"
               />
-              <textarea
+
+              {/* 🍉 3. Swap native textarea for TextareaAutosize */}
+              <TextareaAutosize
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="What's spinning on your mind?..."
-                rows={2}
-                className="text-sm w-full resize-none bg-transparent text-lg focus:outline-none placeholder:text-muted-foreground pt-1"
+                minRows={1}
+                maxRows={8}
+                className="w-full resize-none bg-transparent text-lg focus:outline-none placeholder:text-muted-foreground py-1"
                 disabled={isSubmitting}
                 autoFocus
               />
