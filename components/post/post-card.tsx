@@ -2,7 +2,7 @@ import React from "react";
 import Image from "next/image";
 import { getRelativeTime } from "@/lib/utils";
 import { PostType } from "@/lib/types";
-import PostCardActions from "@/components/post-card-actions";
+import PostCardActions from "./post-card-actions";
 
 const DEFAULT_AVATAR =
   "https://api.dicebear.com/7.x/avataaars/svg?seed=placeholder";

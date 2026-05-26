@@ -1,10 +1,9 @@
 "use client";
-import React, { useOptimistic, useTransition } from "react";
-import { Heart, MessageCircle, SendHorizontal, RefreshCcw } from "lucide-react";
+import React from "react";
+import { MessageCircle, SendHorizontal, RefreshCcw } from "lucide-react";
 import { PostType } from "@/lib/types";
-import { toggleLike } from "@/lib/actions/posts";
 import { useAuthStore } from "@/hooks/useAuthStore";
-import LikeButton from "@/components/like-button";
+import LikeButton from "./like-button";
 
 const PostCardActions = ({ post }: { post: PostType }) => {
   const currentMongoUserId = useAuthStore((state) => state.currentMongoUserId);

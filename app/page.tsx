@@ -3,7 +3,7 @@
 import DemoButton from "@/components/demo-button";
 import { auth } from "@clerk/nextjs/server";
 import { getPosts } from "@/lib/actions/posts";
-import PostCard from "@/components/post-card";
+import PostCard from "../components/post/post-card";
 import Feed from "@/components/feed";
 import NewThread from "@/components/new-thread";
 import mongoose from "mongoose";

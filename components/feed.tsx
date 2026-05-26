@@ -1,6 +1,6 @@
 import React from "react";
 import { PostType } from "@/lib/types";
-import PostCard from "@/components/post-card";
+import PostCard from "./post/post-card";
 
 const Feed = ({ posts }: { posts: PostType[] }) => {
   return (
