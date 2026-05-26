@@ -13,7 +13,7 @@ const PostCardActions = ({ post }: { post: PostType }) => {
   const numReposts = post.reposts.length;
 
   return (
-    <div className="flex gap-3 items-center">
+    <div className="z-50 flex gap-3 items-center">
       <LikeButton post={post} currentMongoUserId={currentMongoUserId} />
 
       <div className="flex items-center gap-1 text-muted-foreground text-sm">

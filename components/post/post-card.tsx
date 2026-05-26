@@ -4,6 +4,7 @@ import { getRelativeTime } from "@/lib/utils";
 import { PostType } from "@/lib/types";
 import PostCardActions from "./post-card-actions";
 import { DEFAULT_AVATAR } from "@/lib/constants";
+import Link from "next/link";
 
 const PostCard = ({ post }: { post: PostType }) => {
   const imageSrc =
@@ -11,7 +12,10 @@ const PostCard = ({ post }: { post: PostType }) => {
       ? post.userId.profilePicture
       : DEFAULT_AVATAR;
   return (
-    <div className="flex gap-3 items-start ">
+    <Link
+      href={`/posts/${post._id}`}
+      className="z-10 flex gap-3 items-start cursor-pointer"
+    >
       {post.userId.profilePicture && (
         <Image
           src={imageSrc}
@@ -33,7 +37,7 @@ const PostCard = ({ post }: { post: PostType }) => {
         </div>
         <PostCardActions post={post} />
       </div>
-    </div>
+    </Link>
   );
 };
 
