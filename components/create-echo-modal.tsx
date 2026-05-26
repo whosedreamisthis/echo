@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Paperclip, BarChart2, Smile } from "lucide-react";
-import { createEcho } from "@/lib/actions";
+import { createEcho } from "@/lib/actions/posts";
 import Image from "next/image";
 import TextareaAutosize from "react-textarea-autosize";
 

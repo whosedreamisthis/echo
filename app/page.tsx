@@ -12,7 +12,8 @@ import User from "@/models/User";
 
 export default async function Home() {
   const { userId } = await auth();
-  const { posts } = await getPosts();
+
+  const { posts } = await getPosts(userId);
 
   let mongoProfileImage = "/profile.jpg"; // Default fallback placeholder
 

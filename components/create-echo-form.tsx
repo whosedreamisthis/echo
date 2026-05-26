@@ -1,7 +1,7 @@
 // components/CreateEchoForm.tsx
 "use client";
 import React, { useState } from "react";
-import { createEcho } from "@/lib/actions";
+import { createEcho } from "@/lib/actions/posts";
 
 export function CreateEchoForm() {
   const [content, setContent] = useState("");

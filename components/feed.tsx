@@ -9,10 +9,6 @@ const Feed = ({ posts }: { posts: PostType[] }) => {
         <div key={post._id} className="border p-5">
           <PostCard post={post} />
         </div>
-        // <div key={post.id}>
-        //   <h2>{post.title}</h2>
-        //   <p>{post.content}</p>
-        // </div>
       ))}
     </>
   );
