@@ -8,7 +8,7 @@ import LikeButton from "./like-button";
 const PostCardActions = ({ post }: { post: PostType }) => {
   const currentMongoUserId = useAuthStore((state) => state.currentMongoUserId);
 
-  const numComments = post.comments.length;
+  const numComments = post.commentCount;
   const numShares = post.shares.length;
   const numReposts = post.reposts.length;
 

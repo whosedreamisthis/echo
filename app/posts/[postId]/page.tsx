@@ -1,12 +1,12 @@
 import React from "react";
 import { getSessionUser } from "@/lib/auth-user";
-import { getPostById } from "@/lib/actions/posts";
+import { getPostById, getPostsWithParent } from "@/lib/actions/posts";
 import Image from "next/image";
 import { DEFAULT_AVATAR } from "@/lib/constants";
 import { getRelativeTime } from "@/lib/utils";
 import PostCardActions from "@/components/post/post-card-actions";
-import CommentCard from "@/components/post/comment-card";
-import { CommentType } from "@/lib/types";
+import PostCard from "@/components/post/post-card";
+import { PostType } from "@/lib/types";
 
 const PostPage = async ({
   params,
@@ -20,8 +20,9 @@ const PostPage = async ({
   const { postId } = resolvedParams;
   const { userId, mongoUserId, mongoProfileImage, mongoUsername } = sessionUser;
 
-  const { post } = await getPostById(postId);
-
+  const { post } = (await getPostById(postId)) as { post: PostType | null };
+  const { posts: comments } = await getPostsWithParent(postId);
+  console.log("comments", comments);
   if (!post) {
     return <div>Post not found</div>;
   }
@@ -51,9 +52,9 @@ const PostPage = async ({
           <p className="text-sm">{post.content}</p>
           <PostCardActions post={post} />
         </div>
-        <div className="flex flex-col gap-5">
-          {post.comments.map((comment: CommentType) => {
-            return <CommentCard key={comment._id} comment={comment} />;
+        <div className="flex flex-col gap-5 pt-5">
+          {comments?.map((comment: PostType) => {
+            return <PostCard key={comment._id} post={comment} />;
           })}
         </div>
       </div>

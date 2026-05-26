@@ -14,6 +14,7 @@ export interface CommentType {
 
 export interface PostType {
   _id: string;
+  parentId?: string | null;
   content: string;
   createdAt: string;
   userId: {
@@ -24,10 +25,6 @@ export interface PostType {
   likes: string[]; // Array of User IDs who liked
   reposts: string[]; // Array of User IDs who reposted
   shares: string[]; // Array of User IDs who shared
-  comments: {
-    _id: string;
-    userId: string; // Or an object if you populate it later
-    content: string;
-    createdAt: string;
-  }[];
+  commentCount: number;
+  comments?: PostType[];
 }

@@ -76,9 +76,21 @@ async function seedDatabase() {
       const reposts = getRandomUserIds();
       const shares = getRandomUserIds();
 
-      // Generate random comments
+      // Create the post
+      const post = await Post.create({
+        userId: postAuthor._id,
+        content,
+        likes,
+        reposts,
+        shares,
+        commentCount: 0,
+        createdAt: new Date(
+          Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 7,
+        ),
+      });
+
+      // Generate random comments as posts
       const commentsCount = Math.floor(Math.random() * 5);
-      const comments = [];
 
       for (let j = 0; j < commentsCount; j++) {
         const commentAuthor =
@@ -88,27 +100,26 @@ async function seedDatabase() {
             Math.floor(Math.random() * COMMENT_TEMPLATES.length)
           ];
 
-        comments.push({
+        await Post.create({
           userId: commentAuthor._id,
+          parentId: post._id,
           content: commentContent,
+          likes: getRandomUserIds(),
+          reposts: getRandomUserIds(),
+          shares: getRandomUserIds(),
+          commentCount: 0,
           createdAt: new Date(
-            Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 3,
+            post.createdAt.getTime() + Math.random() * 1000 * 60 * 60 * 24,
           ),
         });
       }
 
-      // Create the post with new interaction metrics
-      await Post.create({
-        userId: postAuthor._id,
-        content,
-        likes,
-        reposts,
-        shares,
-        comments,
-        createdAt: new Date(
-          Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 7,
-        ),
-      });
+      // Update the parent post's comment count
+      if (commentsCount > 0) {
+        await Post.findByIdAndUpdate(post._id, {
+          commentCount: commentsCount,
+        });
+      }
     }
 
     console.log(`✅ Success! Background sandbox environment seeded:`);

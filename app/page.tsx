@@ -8,6 +8,7 @@ import Feed from "@/components/feed";
 import NewThread from "@/components/new-thread";
 import AuthProvider from "@/components/auth-provider";
 import { getSessionUser } from "@/lib/auth-user";
+import { SignOutButton } from "@clerk/nextjs";
 
 export default async function Home() {
   const { userId, mongoUserId, mongoProfileImage } = await getSessionUser();

@@ -8,35 +8,12 @@ import User from "@/models/User";
 import mongoose from "mongoose";
 import { PostType } from "@/lib/types";
 
-// 🍉 Pass the optional currentClerkUserId into the function
-export async function getPosts(currentClerkUserId?: string | null) {
-  await connectDB();
-
-  // Force the bundler to keep the registration by referencing it explicitly
-  const EnsureUserSchema = User || mongoose.model("User");
-
-  // 1. Initialize an empty query filter object
-  let queryFilter = {};
-
-  if (currentClerkUserId) {
-    const currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
-
-    if (currentUserDoc) {
-      // Filter out posts where userId equals the current user's ObjectId ($ne = Not Equal)
-      queryFilter = { userId: { $ne: currentUserDoc._id } };
-    }
-  }
-
-  const posts = await Post.find(queryFilter)
-    .sort({ createdAt: -1 })
-    .limit(20)
-    .populate("userId", "username profilePicture")
-    .lean();
-
-  const plainPosts = posts.map((post: any) => {
+function getPlainPosts(posts) {
+  return posts.map((post: any) => {
     return {
       ...post,
       _id: post._id.toString(),
+      parentId: post.parentId ? post.parentId.toString() : null,
       userId:
         post.userId && typeof post.userId === "object"
           ? {
@@ -49,16 +26,62 @@ export async function getPosts(currentClerkUserId?: string | null) {
       likes: post.likes?.map((id: any) => id.toString()) || [],
       reposts: post.reposts?.map((id: any) => id.toString()) || [],
       shares: post.shares?.map((id: any) => id.toString()) || [],
-      comments:
-        post.comments?.map((c: any) => ({
-          ...c,
-          _id: c._id.toString(),
-          userId: c.userId.toString(),
-          createdAt: c.createdAt.toISOString(),
-        })) || [],
+      commentCount: post.commentCount || 0,
       createdAt: post.createdAt.toISOString(),
     };
   });
+}
+
+// 🍉 Pass the optional currentClerkUserId into the function
+export async function getPosts(currentClerkUserId?: string | null) {
+  await connectDB();
+
+  // Force the bundler to keep the registration by referencing it explicitly
+  const EnsureUserSchema = User || mongoose.model("User");
+
+  // 1. Initialize an empty query filter object
+  let queryFilter: any = { parentId: null };
+
+  if (currentClerkUserId) {
+    const currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
+
+    if (currentUserDoc) {
+      // Filter out posts where userId equals the current user's ObjectId ($ne = Not Equal)
+      queryFilter = { ...queryFilter, userId: { $ne: currentUserDoc._id } };
+    }
+  }
+
+  const posts = await Post.find(queryFilter)
+    .sort({ createdAt: -1 })
+    .limit(20)
+    .populate("userId", "username profilePicture")
+    .lean();
+
+  const plainPosts = getPlainPosts(posts);
+
+  return { posts: plainPosts };
+}
+
+export async function getPostsWithParent(parentId: string) {
+  await connectDB();
+
+  // Force the bundler to keep the registration by referencing it explicitly
+  const EnsureUserSchema = User || mongoose.model("User");
+
+  // 1. Initialize an empty query filter object
+  let queryFilter: any = {
+    parentId: new mongoose.Types.ObjectId(parentId),
+  };
+
+  const posts = await Post.find(queryFilter)
+    .sort({ createdAt: -1 })
+    .limit(20)
+    .populate("userId", "username profilePicture")
+    .lean();
+
+  console.log("posts", posts);
+
+  const plainPosts = getPlainPosts(posts);
 
   return { posts: plainPosts };
 }
@@ -69,45 +92,36 @@ export async function getPostById(postId: string) {
 
   const post = await Post.findById(postId)
     .populate("userId", "username profilePicture")
-    .populate({
-      path: "comments.userId", // ✨ Deeply populates the user inside the comments array
-      select: "username profilePicture", // Only bring back the fields you need
-      model: "User", // Explicitly state the target collection model
-    })
     .lean();
 
   if (!post) return { post: null };
 
-  // 🍉 Serialize the raw BSON ObjectIds and Dates into clean plain JSON primitives
-  const plainPost = {
-    ...post,
-    _id: post._id.toString(),
+  const comments = await Post.find({ parentId: postId })
+    .populate("userId", "username profilePicture")
+    .sort({ createdAt: 1 })
+    .lean();
+
+  const serializePost = (p: any) => ({
+    ...p,
+    _id: p._id.toString(),
+    parentId: p.parentId ? p.parentId.toString() : null,
     userId:
-      post.userId && typeof post.userId === "object"
+      p.userId && typeof p.userId === "object"
         ? {
-            ...post.userId,
-            _id: post.userId._id.toString(),
+            ...p.userId,
+            _id: p.userId._id.toString(),
           }
-        : post.userId,
-    likes: post.likes?.map((id: any) => id.toString()) || [],
-    reposts: post.reposts?.map((id: any) => id.toString()) || [],
-    shares: post.shares?.map((id: any) => id.toString()) || [],
-    comments:
-      post.comments?.map((c: any) => ({
-        ...c,
-        _id: c._id.toString(),
-        userId: c.userId.toString(),
-        createdAt: c.createdAt.toISOString(),
-        user:
-          c.userId && typeof c.userId === "object"
-            ? {
-                _id: c.userId._id.toString(),
-                username: c.userId.username,
-                profilePicture: c.userId.profilePicture || null,
-              }
-            : null,
-      })) || [],
-    createdAt: post.createdAt.toISOString(),
+        : p.userId,
+    likes: p.likes?.map((id: any) => id.toString()) || [],
+    reposts: p.reposts?.map((id: any) => id.toString()) || [],
+    shares: p.shares?.map((id: any) => id.toString()) || [],
+    commentCount: p.commentCount || 0,
+    createdAt: p.createdAt.toISOString(),
+  });
+
+  const plainPost = {
+    ...serializePost(post),
+    comments: comments.map(serializePost),
   };
 
   return { post: plainPost };
