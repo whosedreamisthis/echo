@@ -1,12 +1,13 @@
 // components/create-echo-modal.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Paperclip, BarChart2, Smile } from "lucide-react";
 import { createEcho } from "@/lib/actions/posts";
 import Image from "next/image";
 import TextareaAutosize from "react-textarea-autosize";
 import { toast } from "sonner";
+import EmojiPicker, { Theme } from "emoji-picker-react";
 
 interface CreateEchoModalProps {
   isOpen: boolean;
@@ -22,11 +23,33 @@ export function CreateEchoModal({
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   const maxChars = 280;
   const charsLeft = maxChars - content.length;
   const isOverLimit = charsLeft < 0;
   const canPost = content.trim().length > 0 && !isOverLimit && !isSubmitting;
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        pickerRef.current &&
+        !pickerRef.current.contains(event.target as Node)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    }
+
+    // Only attach the event listener if the picker window is actively open
+    if (showEmojiPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showEmojiPicker]);
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
@@ -44,7 +67,12 @@ export function CreateEchoModal({
 
   const handleClose = () => {
     setContent("");
+    setShowEmojiPicker(false);
     onClose();
+  };
+
+  const handleEmojiClick = (emojiData: { emoji: string }) => {
+    setContent((prevContent) => prevContent + emojiData.emoji);
   };
 
   const handleSubmit = async (e: React.SubmitEvent) => {
@@ -127,7 +155,10 @@ export function CreateEchoModal({
 
             <div className="flex-1">
               {/* Media & Input Attachments (Threads-style aesthetic) */}
-              <div className="flex items-start justify-start gap-4 text-muted-foreground mt-2">
+              <div
+                className="relative flex items-center gap-4 text-muted-foreground pl-1 mt-1"
+                ref={pickerRef}
+              >
                 <button
                   type="button"
                   className="hover:text-foreground transition-colors"
@@ -143,9 +174,22 @@ export function CreateEchoModal({
                 <button
                   type="button"
                   className="hover:text-foreground transition-colors"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 >
                   <Smile className="h-5 w-5" />
                 </button>
+                {showEmojiPicker && (
+                  <div className="absolute top-8 left-0 z-50 shadow-xl rounded-xl overflow-hidden border">
+                    <EmojiPicker
+                      onEmojiClick={handleEmojiClick}
+                      theme={Theme.LIGHT} // Forces light skin to match your styling context for now
+                      skinTonesDisabled
+                      searchDisabled
+                      height={350}
+                      width={300}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
