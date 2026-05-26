@@ -7,6 +7,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
+import { Toaster } from "@/components/ui/sonner";
 
 const interSans = Inter({
   variable: "--font-sans",
@@ -44,7 +45,15 @@ export default async function RootLayout({
         <body className="font-sans bg-background text-foreground min-h-full flex flex-col md:flex-row">
           <Navigation profileImage={databaseProfileImage || "/profile.png"} />
 
-          <main className="flex-1 pb-16 md:pb-0 p-8">{children}</main>
+          <main className="flex-1 pb-16 md:pb-0 p-8">
+            {children}
+            <Toaster
+              theme="light"
+              richColors
+              closeButton
+              position="top-right"
+            />
+          </main>
         </body>
       </ClerkProvider>
     </html>

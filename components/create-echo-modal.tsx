@@ -6,6 +6,7 @@ import { X, Paperclip, BarChart2, Smile } from "lucide-react";
 import { createEcho } from "@/lib/actions/posts";
 import Image from "next/image";
 import TextareaAutosize from "react-textarea-autosize";
+import { toast } from "sonner";
 
 interface CreateEchoModalProps {
   isOpen: boolean;
@@ -57,9 +58,10 @@ export function CreateEchoModal({
       const result = await createEcho(content);
       if (result.success) {
         handleClose();
-        // Optional: Trigger a feed refresh here via TanStack Query later!
+        toast.success("Echo posted successfully!");
       } else {
         setError(result.error || "Something went wrong.");
+        toast.error(`Error: ${result.error}`);
       }
     } catch (err) {
       setError("Failed to post Echo. Please try again.");
