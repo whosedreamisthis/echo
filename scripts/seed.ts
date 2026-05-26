@@ -1,8 +1,8 @@
 // scripts/seed.ts
 import mongoose from "mongoose";
-import connectDB from "../lib/db"; // Adjust path based on your project structure
-import User from "@/models/User"; // Adjust path
-import Post from "@/models/Post"; // Adjust path
+import connectDB from "../lib/db";
+import User from "@/models/User";
+import Post from "@/models/Post";
 
 const POST_TEMPLATES = [
   "Just deploying my new Next.js app. The DX is incredible! 🚀",
@@ -27,16 +27,10 @@ async function seedDatabase() {
     console.log("⏳ Connecting to MongoDB...");
     await connectDB();
 
-    // 1. Clear existing data
-    // Crucial: We ONLY clear Posts and non-ephemeral seed users.
-    // We avoid blanket clearing if you want to keep active ephemeral sessions alive,
-    // but for a clean seed reset, we clear them here.
     console.log("🧹 Clearing existing Users and Posts...");
     await User.deleteMany({});
     await Post.deleteMany({});
 
-    // 2. Create the Fixed Seed Community
-    // These users act as the active "network" your ephemeral users interact with.
     console.log("👥 Creating seed community users...");
     const usernames = [
       "alice_dev",
@@ -49,7 +43,6 @@ async function seedDatabase() {
 
     for (const username of usernames) {
       const user = await User.create({
-        // These are fallback mock IDs for the seed background pool
         clerkId: `seed_user_${Math.random().toString(36).substring(2, 15)}`,
         username,
         email: `${username}@seed.local`,
@@ -58,26 +51,33 @@ async function seedDatabase() {
       seedUsers.push(user);
     }
 
-    // 3. Create Dozens of Seed Posts authored by the Community
-    console.log("📝 Generating community posts, likes, and comments...");
-    const TOTAL_POSTS = 50; // Increased slightly for a richer dashboard vibe
+    console.log(
+      "📝 Generating community posts, likes, reposts, shares, and comments...",
+    );
+    const TOTAL_POSTS = 50;
 
     for (let i = 0; i < TOTAL_POSTS; i++) {
-      // Pick a random seed author
       const postAuthor =
         seedUsers[Math.floor(Math.random() * seedUsers.length)];
-
       const content =
         POST_TEMPLATES[Math.floor(Math.random() * POST_TEMPLATES.length)] +
         ` (#${i + 1})`;
 
-      // Distribute likes among the seed users
-      const likesCount = Math.floor(Math.random() * seedUsers.length);
-      const shuffledUsers = [...seedUsers].sort(() => 0.5 - Math.random());
-      const likes = shuffledUsers.slice(0, likesCount).map((user) => user._id);
+      // Helper function to get a random assortment of users for metrics
+      const getRandomUserIds = () => {
+        const count = Math.floor(Math.random() * (seedUsers.length + 1));
+        return [...seedUsers]
+          .sort(() => 0.5 - Math.random())
+          .slice(0, count)
+          .map((user) => user._id);
+      };
 
-      // Generate random comments from other seed users
-      const commentsCount = Math.floor(Math.random() * 5); // 0 to 4 comments per post
+      const likes = getRandomUserIds();
+      const reposts = getRandomUserIds();
+      const shares = getRandomUserIds();
+
+      // Generate random comments
+      const commentsCount = Math.floor(Math.random() * 5);
       const comments = [];
 
       for (let j = 0; j < commentsCount; j++) {
@@ -97,11 +97,13 @@ async function seedDatabase() {
         });
       }
 
-      // Create the post
+      // Create the post with new interaction metrics
       await Post.create({
         userId: postAuthor._id,
         content,
         likes,
+        reposts,
+        shares,
         comments,
         createdAt: new Date(
           Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 7,
@@ -112,10 +114,7 @@ async function seedDatabase() {
     console.log(`✅ Success! Background sandbox environment seeded:`);
     console.log(`   - ${seedUsers.length} Constant Seed Users (The Community)`);
     console.log(
-      `   - ${TOTAL_POSTS} Active posts populated with likes and comments.`,
-    );
-    console.log(
-      `💡 Ready for ephemeral demo users to log in and interact dynamically!`,
+      `   - ${TOTAL_POSTS} Active posts populated with interactions (likes, reposts, shares, comments).`,
     );
   } catch (error) {
     console.error("❌ Seeding failed:", error);

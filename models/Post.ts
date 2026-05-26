@@ -9,8 +9,10 @@ export interface IComment {
 export interface IPost extends Document {
   userId: mongoose.Types.ObjectId;
   content: string;
-  likes: mongoose.Types.ObjectId[]; // ✨ Track user ObjectIds who liked it
-  comments: IComment[]; // ✨ Embedded comments array for performance
+  likes: mongoose.Types.ObjectId[];
+  reposts: mongoose.Types.ObjectId[];
+  shares: mongoose.Types.ObjectId[];
+  comments: IComment[];
   createdAt: Date;
 }
 
@@ -23,8 +25,10 @@ const CommentSchema = new Schema<IComment>({
 const PostSchema = new Schema<IPost>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   content: { type: String, required: true, maxlength: 280 },
-  likes: [{ type: Schema.Types.ObjectId, ref: "User" }], // Array of User IDs
-  comments: [CommentSchema], // Embedded subdocuments
+  likes: [{ type: Schema.Types.ObjectId, ref: "User" }],
+  reposts: [{ type: Schema.Types.ObjectId, ref: "User" }], // Array of User IDs
+  shares: [{ type: Schema.Types.ObjectId, ref: "User" }], // Array of User IDs
+  comments: [CommentSchema],
   createdAt: { type: Date, default: Date.now },
 });
 
