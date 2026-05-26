@@ -1,3 +1,17 @@
+export interface CommentUserType {
+  _id: string;
+  username: string;
+  profilePicture: string | null;
+}
+
+// The clean, serialized comment data sent to your Client Components
+export interface CommentType {
+  _id: string;
+  content: string;
+  createdAt: string; // ISO string representation from serialization
+  user: CommentUserType | null; // Nullable in case the user deleted their account
+}
+
 export interface PostType {
   _id: string;
   content: string;

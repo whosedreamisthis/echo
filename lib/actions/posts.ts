@@ -6,6 +6,7 @@ import connectDB from "@/lib/db";
 import Post from "@/models/Post";
 import User from "@/models/User";
 import mongoose from "mongoose";
+import { PostType } from "@/lib/types";
 
 // 🍉 Pass the optional currentClerkUserId into the function
 export async function getPosts(currentClerkUserId?: string | null) {
@@ -60,6 +61,56 @@ export async function getPosts(currentClerkUserId?: string | null) {
   });
 
   return { posts: plainPosts };
+}
+
+// lib/actions/posts.ts
+export async function getPostById(postId: string) {
+  await connectDB();
+
+  const post = await Post.findById(postId)
+    .populate("userId", "username profilePicture")
+    .populate({
+      path: "comments.userId", // ✨ Deeply populates the user inside the comments array
+      select: "username profilePicture", // Only bring back the fields you need
+      model: "User", // Explicitly state the target collection model
+    })
+    .lean();
+
+  if (!post) return { post: null };
+
+  // 🍉 Serialize the raw BSON ObjectIds and Dates into clean plain JSON primitives
+  const plainPost = {
+    ...post,
+    _id: post._id.toString(),
+    userId:
+      post.userId && typeof post.userId === "object"
+        ? {
+            ...post.userId,
+            _id: post.userId._id.toString(),
+          }
+        : post.userId,
+    likes: post.likes?.map((id: any) => id.toString()) || [],
+    reposts: post.reposts?.map((id: any) => id.toString()) || [],
+    shares: post.shares?.map((id: any) => id.toString()) || [],
+    comments:
+      post.comments?.map((c: any) => ({
+        ...c,
+        _id: c._id.toString(),
+        userId: c.userId.toString(),
+        createdAt: c.createdAt.toISOString(),
+        user:
+          c.userId && typeof c.userId === "object"
+            ? {
+                _id: c.userId._id.toString(),
+                username: c.userId.username,
+                profilePicture: c.userId.profilePicture || null,
+              }
+            : null,
+      })) || [],
+    createdAt: post.createdAt.toISOString(),
+  };
+
+  return { post: plainPost };
 }
 
 export async function createEcho(content: string) {
