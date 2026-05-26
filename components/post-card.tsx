@@ -1,17 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { getRelativeTime } from "@/lib/utils";
-
-interface PostType {
-  _id: string;
-  content: string;
-  createdAt: string;
-  userId: {
-    _id: string;
-    username: string;
-    profilePicture?: string;
-  };
-}
+import { PostType } from "@/lib/types";
 
 const PostCard = ({ post }: { post: PostType }) => {
   return (

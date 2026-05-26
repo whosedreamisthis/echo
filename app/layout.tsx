@@ -4,6 +4,9 @@ import "./globals.css";
 import Navigation from "@/components/navigation"; // Adjusted if using named export
 import React from "react";
 import { ClerkProvider } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
+import connectDB from "@/lib/db";
+import User from "@/models/User";
 
 const interSans = Inter({
   variable: "--font-sans",
@@ -15,16 +18,31 @@ export const metadata: Metadata = {
   description: "A threads clone",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { userId } = await auth();
+
+  let databaseProfileImage: string | null = null;
+
+  // 2. Look up the user document inside your MongoDB table
+  if (userId) {
+    await connectDB();
+
+    const dbUser = await User.findOne({ clerkId: userId }).select(
+      "profilePicture",
+    );
+    if (dbUser?.profilePicture) {
+      databaseProfileImage = dbUser.profilePicture;
+    }
+  }
   return (
     <html lang="en" className={`${interSans.variable} antialiased`}>
       <ClerkProvider>
         <body className="font-sans bg-background text-foreground min-h-full flex flex-col md:flex-row">
-          <Navigation />
+          <Navigation profileImage={databaseProfileImage || "/profile.png"} />
 
           <main className="flex-1 pb-16 md:pb-0 p-8">{children}</main>
         </body>

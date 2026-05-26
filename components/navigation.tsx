@@ -34,7 +34,7 @@ const NAV_ITEMS = [
   },
 ];
 
-export default function Navigation() {
+export default function Navigation({ profileImage }: { profileImage: string }) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const pathname = usePathname();
   const initialActive = pathname.split("/")[1] || "home";
@@ -92,6 +92,7 @@ export default function Navigation() {
 
         {/* 3. Render your modal overlay */}
         <CreateEchoModal
+          profileImage={profileImage}
           isOpen={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}
         />
