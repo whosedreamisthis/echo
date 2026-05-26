@@ -7,6 +7,7 @@ import { getRelativeTime } from "@/lib/utils";
 import PostCardActions from "@/components/post/post-card-actions";
 import PostCard from "@/components/post/post-card";
 import { PostType } from "@/lib/types";
+import BackButton from "@/components/back-button";
 
 const PostPage = async ({
   params,
@@ -33,29 +34,32 @@ const PostPage = async ({
       : DEFAULT_AVATAR;
 
   return (
-    <div className="w-full flex flex-col justify-start items-start">
-      <div className="w-full max-w-xl border border-gray-200 rounded-2xl divide-y divide-gray-200 mb-5 overflow-hidden p-5">
-        <div className="flex flex-col justify-start gap-5 pb-5">
-          <div className="flex gap-2 items-center">
-            <Image
-              src={imageSrc}
-              alt="profile picture"
-              width={20}
-              height={20}
-              className="rounded-full bg-zinc-800 w-8 h-8 "
-            />
-            <p className="text-sm font-semibold">{mongoUsername}</p>
-            <p className="text-xs text-muted-foreground">
-              {getRelativeTime(post.createdAt)}
-            </p>
+    <div>
+      <BackButton />
+      <div className="w-full flex flex-col justify-start items-start">
+        <div className="w-full max-w-xl border border-gray-200 rounded-2xl divide-y divide-gray-200 mb-5 overflow-hidden p-5">
+          <div className="flex flex-col justify-start gap-5 pb-5">
+            <div className="flex gap-2 items-center">
+              <Image
+                src={imageSrc}
+                alt="profile picture"
+                width={20}
+                height={20}
+                className="rounded-full bg-zinc-800 w-8 h-8 "
+              />
+              <p className="text-sm font-semibold">{mongoUsername}</p>
+              <p className="text-xs text-muted-foreground">
+                {getRelativeTime(post.createdAt)}
+              </p>
+            </div>
+            <p className="text-sm">{post.content}</p>
+            <PostCardActions post={post} />
           </div>
-          <p className="text-sm">{post.content}</p>
-          <PostCardActions post={post} />
-        </div>
-        <div className="flex flex-col gap-5 pt-5">
-          {comments?.map((comment: PostType) => {
-            return <PostCard key={comment._id} post={comment} />;
-          })}
+          <div className="flex flex-col gap-5 pt-5">
+            {comments?.map((comment: PostType) => {
+              return <PostCard key={comment._id} post={comment} />;
+            })}
+          </div>
         </div>
       </div>
     </div>
