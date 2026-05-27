@@ -38,6 +38,7 @@ const PostCard = ({
     } else {
       if (parentPost !== null) {
         pushToAncestors(parentPost);
+      } else {
       }
       router.push(`/posts/${post._id}`);
     }

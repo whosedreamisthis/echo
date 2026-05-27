@@ -37,35 +37,29 @@ const PostPage = async ({
   return (
     <div>
       <BackButton />
-      <div className="bg-white w-full flex flex-col justify-start items-start">
-        <div className="w-full max-w-xl border border-gray-200 rounded-2xl divide-y divide-gray-200 mb-5 overflow-hidden p-5">
-          <div className="flex flex-col justify-start gap-5 pb-5">
-            <AncestorTrail />
-            <div className="flex gap-2 items-center">
-              <Image
-                src={imageSrc}
-                alt="profile picture"
-                width={20}
-                height={20}
-                className="rounded-full bg-zinc-800 w-8 h-8 "
-              />
-              <p className="text-sm font-semibold">{mongoUsername}</p>
-              <p className="text-xs text-muted-foreground">
-                {getRelativeTime(post.createdAt)}
-              </p>
+      <div className="w-full flex flex-col justify-start items-start">
+        <div className="bg-white  w-full max-w-xl border border-gray-200 rounded-2xl  mb-5 overflow-hidden py-5">
+          <AncestorTrail />
+
+          <div
+            key={post._id}
+            className={`${comments.length === 0 ? "" : "border-b"} pb-5 `}
+          >
+            <div className="px-5">
+              <PostCard post={post} parentPost={null} />
             </div>
-            <p className="text-sm">{post.content}</p>
-            <PostCardActions post={post} profileImage={imageSrc} />
           </div>
 
-          <div className="flex flex-col gap-5 pt-5">
+          <div className="flex flex-col gap-5 pt-5 ">
             {comments?.map((comment: PostType, index) => {
               return (
                 <div
                   key={comment._id}
-                  className={`${index === comments.length - 1 ? "" : "border-b border-gray-200 pb-4"}`}
+                  className={`${index === comments.length - 1 ? "" : "pb-4 border-b "}`}
                 >
-                  <PostCard post={comment} parentPost={post} />
+                  <div className="px-5">
+                    <PostCard post={comment} parentPost={post} />
+                  </div>
                 </div>
               );
             })}

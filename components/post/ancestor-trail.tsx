@@ -28,17 +28,17 @@ const AncestorTrail = () => {
   if (ancestors.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-4">
-      {ancestors.map((ancestor, index) => {
-        const calculatedParent = index > 0 ? ancestors[index - 1] : null;
-        return (
-          <PostCard
-            key={ancestor._id}
-            post={ancestor}
-            parentPost={calculatedParent}
-          />
-        );
-      })}
+    <div className="pb-4">
+      <div className="flex flex-col gap-4 px-5">
+        {ancestors.map((ancestor, index) => {
+          const calculatedParent = index > 0 ? ancestors[index - 1] : null;
+          return (
+            <div key={ancestor._id} className={`pb-5 border-b`}>
+              <PostCard post={ancestor} parentPost={calculatedParent} />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
