@@ -7,7 +7,7 @@ const Feed = ({ posts }: { posts: PostType[] }) => {
     <>
       {posts.map((post) => (
         <div key={post._id} className="border pt-5 px-5 pb-2">
-          <PostCard post={post} />
+          <PostCard post={post} parentPost={null} />
         </div>
       ))}
     </>

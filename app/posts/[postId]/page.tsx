@@ -8,6 +8,7 @@ import PostCardActions from "@/components/post/post-card-actions";
 import PostCard from "@/components/post/post-card";
 import { PostType } from "@/lib/types";
 import BackButton from "@/components/back-button";
+import AncestorTrail from "@/components/post/ancestor-trail";
 
 const PostPage = async ({
   params,
@@ -39,6 +40,7 @@ const PostPage = async ({
       <div className="w-full flex flex-col justify-start items-start">
         <div className="w-full max-w-xl border border-gray-200 rounded-2xl divide-y divide-gray-200 mb-5 overflow-hidden p-5">
           <div className="flex flex-col justify-start gap-5 pb-5">
+            <AncestorTrail />
             <div className="flex gap-2 items-center">
               <Image
                 src={imageSrc}
@@ -55,9 +57,12 @@ const PostPage = async ({
             <p className="text-sm">{post.content}</p>
             <PostCardActions post={post} profileImage={imageSrc} />
           </div>
+
           <div className="flex flex-col gap-5 pt-5">
             {comments?.map((comment: PostType) => {
-              return <PostCard key={comment._id} post={comment} />;
+              return (
+                <PostCard key={comment._id} post={comment} parentPost={post} />
+              );
             })}
           </div>
         </div>

@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import Image from "next/image";
 import { getRelativeTime } from "@/lib/utils";
@@ -5,16 +6,42 @@ import { PostType } from "@/lib/types";
 import PostCardActions from "./post-card-actions";
 import { DEFAULT_AVATAR } from "@/lib/constants";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { usePostStore } from "@/stores/usePostStore";
 
-const PostCard = ({ post }: { post: PostType }) => {
+const PostCard = ({
+  post,
+  parentPost,
+}: {
+  post: PostType;
+  parentPost: PostType | null;
+}) => {
+  const router = useRouter();
+  const pushToAncestors = usePostStore((state) => state.pushToAncestors);
+  const ancestors = usePostStore((state) => state.ancestors);
+  const setAncestors = usePostStore((state) => state.setAncestors);
+
   const imageSrc =
     post.userId?.profilePicture && post.userId.profilePicture !== "null"
       ? post.userId.profilePicture
       : DEFAULT_AVATAR;
+
+  const handlePostCardClick = () => {
+    const existingIndex = ancestors.findIndex(
+      (ancestor) => ancestor._id === post._id,
+    );
+
+    if (existingIndex !== -1) {
+      // 2. Keep everything up to, but NOT including, this post
+      setAncestors(ancestors.slice(0, existingIndex));
+    } else if (parentPost !== null) pushToAncestors(parentPost);
+    router.push(`/posts/${post._id}`);
+  };
+
   return (
-    <Link
-      href={`/posts/${post._id}`}
+    <div
       className="z-10 flex gap-3 items-start cursor-pointer"
+      onClick={handlePostCardClick}
     >
       {post.userId.profilePicture && (
         <Image
@@ -37,7 +64,7 @@ const PostCard = ({ post }: { post: PostType }) => {
         </div>
         <PostCardActions post={post} profileImage={imageSrc} />
       </div>
-    </Link>
+    </div>
   );
 };
 
