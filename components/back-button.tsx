@@ -21,7 +21,7 @@ export default function BackButton() {
   return (
     <button
       onClick={handleBack}
-      className="pb-5 text-white rounded cursor-pointer"
+      className="p-5 text-white rounded cursor-pointer"
     >
       <ArrowLeft className="text-muted-foreground hover:text-white transition-colors" />
     </button>

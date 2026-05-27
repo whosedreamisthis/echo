@@ -38,7 +38,7 @@ const PostPage = async ({
     <div>
       <BackButton />
       <div className="w-full flex flex-col justify-start items-start">
-        <div className="bg-white  w-full max-w-xl border border-gray-200 rounded-2xl  mb-5 overflow-hidden py-5">
+        <div className="bg-white  w-full max-w-xl border border-gray-200 sm:rounded-2xl  mb-5 overflow-hidden py-5">
           <AncestorTrail />
 
           <div

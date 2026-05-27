@@ -45,7 +45,7 @@ export default async function RootLayout({
         <body className="font-sans bg-background text-foreground min-h-full flex flex-col md:flex-row">
           <Navigation profileImage={databaseProfileImage || "/profile.png"} />
 
-          <main className="flex-1 pb-16 md:pb-0 p-8">
+          <main className="flex-1 pb-16 sm:pb-0 sm:p-8">
             {children}
             <Toaster
               theme="light"
