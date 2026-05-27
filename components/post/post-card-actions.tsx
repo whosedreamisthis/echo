@@ -21,6 +21,10 @@ const PostCardActions = ({
   const numShares = post.shares.length;
   const numReposts = post.reposts.length;
 
+  const handleReply = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsReplyOpen(true);
+  };
   return (
     <>
       <div className="z-50 flex gap-3 items-center">
@@ -28,7 +32,7 @@ const PostCardActions = ({
 
         <div
           className="flex items-center gap-1 text-muted-foreground text-sm cursor-pointer z-60"
-          onClick={() => setIsReplyOpen(true)}
+          onClick={handleReply}
         >
           <MessageCircle size={16} />
           <p className="pt-px">{numComments}</p>
