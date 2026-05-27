@@ -37,7 +37,7 @@ const PostPage = async ({
   return (
     <div>
       <BackButton />
-      <div className="w-full flex flex-col justify-start items-start">
+      <div className="bg-white w-full flex flex-col justify-start items-start">
         <div className="w-full max-w-xl border border-gray-200 rounded-2xl divide-y divide-gray-200 mb-5 overflow-hidden p-5">
           <div className="flex flex-col justify-start gap-5 pb-5">
             <AncestorTrail />

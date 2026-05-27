@@ -127,3 +127,10 @@
     @apply font-sans;
   }
 }
+
+body {
+  background-color: #f8f8f8;
+}
+.navigation {
+  background-color: #f8f8f8;
+}

@@ -15,9 +15,9 @@ export default async function Home() {
   const { posts } = await getPosts(userId);
 
   return (
-    <div className="w-full flex flex-col justify-start items-start">
+    <div className="w-full flex flex-col justify-start items-start`">
       {!userId && <DemoButton />}
-      <div className="w-full max-w-xl rounded-2xl  mb-5 overflow-hidden ">
+      <div className="w-full max-w-xl rounded-2xl  mb-5 overflow-hidden border border-gray-200  bg-white">
         <div className="border-b border-gray-200">
           <NewThread profileImage={mongoProfileImage} />
         </div>
