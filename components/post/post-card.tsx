@@ -26,21 +26,26 @@ const PostCard = ({
       ? post.userId.profilePicture
       : DEFAULT_AVATAR;
 
-  const handlePostCardClick = () => {
-    const existingIndex = ancestors.findIndex(
-      (ancestor) => ancestor._id === post._id,
-    );
+  const handlePostCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest("button") || target.closest("a")) return;
+
+    const existingIndex = ancestors.findIndex((a) => a._id === post._id);
 
     if (existingIndex !== -1) {
-      // 2. Keep everything up to, but NOT including, this post
-      setAncestors(ancestors.slice(0, existingIndex));
-    } else if (parentPost !== null) pushToAncestors(parentPost);
-    router.push(`/posts/${post._id}`);
+      const stepsBack = ancestors.length - existingIndex;
+      window.history.go(-stepsBack);
+    } else {
+      if (parentPost !== null) {
+        pushToAncestors(parentPost);
+      }
+      router.push(`/posts/${post._id}`);
+    }
   };
 
   return (
     <div
-      className="z-10 flex gap-3 items-start cursor-pointer"
+      className="z-10 flex gap-3 items-start cursor-pointer "
       onClick={handlePostCardClick}
     >
       {post.userId.profilePicture && (

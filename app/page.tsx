@@ -17,8 +17,10 @@ export default async function Home() {
   return (
     <div className="w-full flex flex-col justify-start items-start">
       {!userId && <DemoButton />}
-      <div className="w-full max-w-xl border border-gray-200 rounded-2xl divide-y divide-gray-200 mb-5 overflow-hidden">
-        <NewThread profileImage={mongoProfileImage} />
+      <div className="w-full max-w-xl rounded-2xl  mb-5 overflow-hidden ">
+        <div className="border-b border-gray-200">
+          <NewThread profileImage={mongoProfileImage} />
+        </div>
         <AuthProvider userId={mongoUserId}>
           <Feed posts={posts} />
         </AuthProvider>

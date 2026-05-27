@@ -1,28 +1,29 @@
+// src/components/back-button.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { usePostStore } from "@/stores/usePostStore";
 
-export default function BackButton({
-  children,
-}: {
-  children?: React.ReactNode;
-}) {
+export default function BackButton() {
   const router = useRouter();
-  const popFromAncestors = usePostStore((state) => state.popFromAncestors);
+  const ancestors = usePostStore((state) => state.ancestors);
 
   const handleBack = () => {
-    popFromAncestors();
-    router.back();
+    if (ancestors.length > 0) {
+      // State sync will be handled automatically by AncestorTrail's useEffect!
+      router.back();
+    } else {
+      router.push("/");
+    }
   };
 
   return (
     <button
       onClick={handleBack}
-      className="pb-5  text-white rounded cu cursor-pointer"
+      className="pb-5 text-white rounded cursor-pointer"
     >
-      <ArrowLeft className="text-muted-foreground" />
+      <ArrowLeft className="text-muted-foreground hover:text-white transition-colors" />
     </button>
   );
 }

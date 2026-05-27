@@ -59,9 +59,14 @@ const PostPage = async ({
           </div>
 
           <div className="flex flex-col gap-5 pt-5">
-            {comments?.map((comment: PostType) => {
+            {comments?.map((comment: PostType, index) => {
               return (
-                <PostCard key={comment._id} post={comment} parentPost={post} />
+                <div
+                  key={comment._id}
+                  className={`${index === comments.length - 1 ? "" : "border-b border-gray-200 pb-4"}`}
+                >
+                  <PostCard post={comment} parentPost={post} />
+                </div>
               );
             })}
           </div>

@@ -6,8 +6,10 @@ const Feed = ({ posts }: { posts: PostType[] }) => {
   return (
     <>
       {posts.map((post) => (
-        <div key={post._id} className="border pt-5 px-5 pb-2">
-          <PostCard post={post} parentPost={null} />
+        <div key={post._id} className=" border-b border-gray-200 pt-5 pb-2">
+          <div className="px-5">
+            <PostCard post={post} parentPost={null} />
+          </div>
         </div>
       ))}
     </>
