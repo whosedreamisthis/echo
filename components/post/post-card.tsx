@@ -1,3 +1,4 @@
+// src/components/post/post-card.tsx
 "use client";
 import React from "react";
 import Image from "next/image";
@@ -8,39 +9,63 @@ import { DEFAULT_AVATAR } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import PostCardMenu from "./post-card-menu";
 
-const PostCard = ({ post }: { post: PostType }) => {
+interface PostCardProps {
+  post: PostType;
+  showThreadLine?: boolean;
+}
+
+const PostCard = ({ post, showThreadLine = false }: PostCardProps) => {
   const router = useRouter();
 
   const imageSrc =
     post.userId?.profilePicture && post.userId.profilePicture !== "null"
       ? post.userId.profilePicture
       : DEFAULT_AVATAR;
-  console.log("userId ", post.userId);
-  console.log("profile pic ", post.userId?.profilePicture);
 
   const handlePostCardClick = (e: React.MouseEvent) => {
     router.push(`/posts/${post._id}`);
   };
 
   return (
+    // 🍉 Added 'relative' here so the thread line treats this entire card as its boundary
     <div
-      className="relative z-10 flex gap-3 items-start cursor-pointer "
+      className="relative z-10 flex gap-3 items-start cursor-pointer group"
       onClick={handlePostCardClick}
     >
-      {imageSrc && (
-        <Image
-          src={imageSrc}
-          alt="profile picture"
-          width={20}
-          height={20}
-          className="rounded-full bg-zinc-800 w-8 h-8 "
+      {/* 🍉 The Dynamic Thread Line */}
+      {showThreadLine && (
+        <div
+          className="absolute bg-gray-200 z-10"
+          style={{
+            width: "2px",
+            left: "15px", // Exactly centers it under a 32px (w-8) avatar
+            top: "43px", // Starts right below the avatar circle
+            bottom: "-10px", // Stretches past the bottom to bridge the gap to the next card
+          }}
         />
       )}
-      <div className="flex flex-col justify-start gap-3">
+
+      {/* Avatar Column */}
+      <div className="flex flex-col items-center flex-shrink-0 relative">
+        {imageSrc && (
+          <Image
+            src={imageSrc}
+            alt="profile picture"
+            width={32}
+            height={32}
+            className="rounded-full bg-zinc-800 w-8 h-8 relative z-20"
+          />
+        )}
+      </div>
+
+      {/* Content Column */}
+      <div className="flex flex-col justify-start gap-3 w-full min-w-0">
         <div className="flex flex-col gap-1">
           <div className="flex justify-between items-center">
             <div className="flex gap-2 items-center">
-              <h2 className="text-xs font-bold">{post.userId.username}</h2>
+              <h2 className="text-xs font-bold truncate max-w-[150px]">
+                {post.userId?.username || "anonymous"}
+              </h2>
               <p className="text-xs text-muted-foreground">
                 {getRelativeTime(post.createdAt)}
               </p>
@@ -49,7 +74,7 @@ const PostCard = ({ post }: { post: PostType }) => {
               <PostCardMenu postId={post._id} />
             </div>
           </div>
-          <p className="text-sm text-foreground">{post.content}</p>
+          <p className="text-sm text-foreground break-words">{post.content}</p>
         </div>
         <PostCardActions post={post} profileImage={imageSrc} />
       </div>

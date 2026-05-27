@@ -10,7 +10,7 @@ const AncestorTrail = ({ ancestors }: { ancestors: PostType[] }) => {
         {ancestors.map((ancestor) => {
           return (
             <div key={ancestor._id} className={`pb-5 border-b`}>
-              <PostCard post={ancestor} />
+              <PostCard post={ancestor} showThreadLine={true} />
             </div>
           );
         })}
