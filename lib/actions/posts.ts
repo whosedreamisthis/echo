@@ -33,33 +33,59 @@ function getPlainPosts(posts: PostType[]) {
 }
 
 // 🍉 Pass the optional currentClerkUserId into the function
-export async function getPosts(currentClerkUserId?: string | null) {
-  await connectDB();
+// lib/actions/posts.ts
 
-  // Force the bundler to keep the registration by referencing it explicitly
+export async function getPosts(
+  currentClerkUserId?: string | null,
+  cursor?: { createdAt: string; id: string } | null, // 🍉 Accept a compound object
+) {
+  await connectDB();
   const EnsureUserSchema = User || mongoose.model("User");
 
-  // 1. Initialize an empty query filter object
   let queryFilter: any = { parentId: null };
+
+  // 🍉 Tie-breaker query logic
+  if (cursor) {
+    queryFilter.$or = [
+      { createdAt: { $lt: new Date(cursor.createdAt) } },
+      {
+        createdAt: new Date(cursor.createdAt),
+        _id: { $lt: new mongoose.Types.ObjectId(cursor.id) },
+      },
+    ];
+  }
 
   if (currentClerkUserId) {
     const currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
-
     if (currentUserDoc) {
-      // Filter out posts where userId equals the current user's ObjectId ($ne = Not Equal)
       queryFilter = { ...queryFilter, userId: { $ne: currentUserDoc._id } };
     }
   }
 
+  const limitValue = 20;
+
+  // 🍉 Ensure you sort by BOTH fields to keep the database performance stable
   const posts = await Post.find(queryFilter)
-    .sort({ createdAt: -1 })
-    .limit(20)
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limitValue + 1)
     .populate("userId", "username profilePicture")
     .lean();
 
-  const plainPosts = getPlainPosts(posts);
+  const hasNextPage = posts.length > limitValue;
+  const slicedPosts = hasNextPage ? posts.slice(0, limitValue) : posts;
+  const plainPosts = getPlainPosts(slicedPosts);
 
-  return { posts: plainPosts };
+  // 🍉 Construct the compound next cursor from the final element
+  let nextCursor = null;
+  if (hasNextPage && plainPosts.length > 0) {
+    const lastPost = plainPosts[plainPosts.length - 1];
+    nextCursor = {
+      createdAt: lastPost.createdAt, // This is already an ISO string from getPlainPosts
+      id: lastPost._id,
+    };
+  }
+
+  return { posts: plainPosts, nextCursor };
 }
 
 export async function getPostsWithParent(parentId: string) {
