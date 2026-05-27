@@ -85,46 +85,111 @@ export async function getPostsWithParent(parentId: string) {
 }
 
 // lib/actions/posts.ts
+// lib/actions/posts.ts
+// lib/actions/posts.ts
 export async function getPostById(postId: string) {
   await connectDB();
 
-  const post = await Post.findById(postId)
-    .populate("userId", "username profilePicture")
-    .lean();
+  const EnsureUserSchema = User || mongoose.model("User");
+  const EnsurePostSchema = Post || mongoose.model("Post");
 
-  if (!post) return { post: null };
+  try {
+    // 1. Fetch the target post and its recursive ancestors
+    const aggregationResults = await Post.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(postId) } },
+      {
+        $graphLookup: {
+          from: "posts",
+          startWith: "$parentId",
+          connectFromField: "parentId",
+          connectToField: "_id",
+          as: "rawAncestors",
+        },
+      },
+    ]);
 
-  const comments = await Post.find({ parentId: postId })
-    .populate("userId", "username profilePicture")
-    .sort({ createdAt: 1 })
-    .lean();
+    if (!aggregationResults.length) return { post: null, ancestors: [] };
 
-  const serializePost = (p: any) => ({
-    ...p,
-    _id: p._id.toString(),
-    parentId: p.parentId ? p.parentId.toString() : null,
-    userId:
-      p.userId && typeof p.userId === "object"
-        ? {
-            ...p.userId,
-            _id: p.userId._id.toString(),
-          }
-        : p.userId,
-    likes: p.likes?.map((id: any) => id.toString()) || [],
-    reposts: p.reposts?.map((id: any) => id.toString()) || [],
-    shares: p.shares?.map((id: any) => id.toString()) || [],
-    commentCount: p.commentCount || 0,
-    createdAt: p.createdAt.toISOString(),
-  });
+    const targetPostRaw = aggregationResults[0];
 
-  const plainPost = {
-    ...serializePost(post),
-    comments: comments.map(serializePost),
-  };
+    // 2. Fetch the comments (replies) belonging to the target post
+    const commentsRaw = await Post.find({
+      parentId: new mongoose.Types.ObjectId(postId),
+    })
+      .populate("userId", "username profilePicture")
+      .sort({ createdAt: 1 })
+      .lean();
 
-  return { post: plainPost };
+    // 🍉 FIX: Get the target post's userId AND all ancestor userIds to populate everything at once
+    const allUserIds = [
+      targetPostRaw.userId,
+      ...targetPostRaw.rawAncestors.map((a: any) => a.userId),
+    ];
+
+    const populatedUsers = await User.find(
+      { _id: { $in: allUserIds } },
+      "username profilePicture",
+    ).lean();
+    const userMap = new Map(
+      populatedUsers.map((u: any) => [u._id.toString(), u]),
+    );
+
+    // 🍉 FIX: Re-attach user data to the target post itself
+    const mainPostUserIdStr = targetPostRaw.userId.toString();
+    targetPostRaw.userId =
+      userMap.get(mainPostUserIdStr) || targetPostRaw.userId;
+
+    // Re-attach user data to each ancestor item
+    const populatedAncestors = targetPostRaw.rawAncestors.map(
+      (ancestor: any) => ({
+        ...ancestor,
+        userId: userMap.get(ancestor.userId.toString()) || ancestor.userId,
+      }),
+    );
+
+    // 3. Sort ancestors chronologically
+    const orderedAncestors = populatedAncestors.sort((a: any, b: any) => {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+
+    // 4. Standard serializer to handle plain object transformations
+    const serializePost = (p: any) => ({
+      ...p,
+      _id: p._id.toString(),
+      parentId: p.parentId ? p.parentId.toString() : null,
+      userId:
+        p.userId && typeof p.userId === "object"
+          ? {
+              ...p.userId,
+              _id: p.userId._id.toString(),
+            }
+          : p.userId,
+      likes: p.likes?.map((id: any) => id.toString()) || [],
+      reposts: p.reposts?.map((id: any) => id.toString()) || [],
+      shares: p.shares?.map((id: any) => id.toString()) || [],
+      commentCount: p.commentCount || 0,
+      createdAt:
+        p.createdAt instanceof Date
+          ? p.createdAt.toISOString()
+          : new Date(p.createdAt).toISOString(),
+    });
+
+    // Strip raw array off target before wrapping
+    const { rawAncestors, ...cleanTargetPost } = targetPostRaw;
+
+    const plainPost = serializePost(cleanTargetPost);
+    const plainComments = commentsRaw.map(serializePost);
+    const plainAncestors = orderedAncestors.map(serializePost);
+
+    return {
+      post: { ...plainPost, comments: plainComments },
+      ancestors: plainAncestors,
+    };
+  } catch (error) {
+    console.error("Error loading deep link ancestors:", error);
+    return { post: null, ancestors: [] };
+  }
 }
-
 export async function createEcho(
   content: string,
   parentId: string | null = null,

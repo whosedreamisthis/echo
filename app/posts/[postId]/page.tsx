@@ -20,35 +20,40 @@ const PostPage = async ({
     getSessionUser(),
   ]);
   const { postId } = resolvedParams;
-  const { userId, mongoUserId, mongoProfileImage, mongoUsername } = sessionUser;
 
-  const { post } = (await getPostById(postId)) as { post: PostType | null };
+  const { post, ancestors } = (await getPostById(postId)) as {
+    post: PostType | null;
+    ancestors: PostType[];
+  };
   const { posts: comments } = await getPostsWithParent(postId);
 
   if (!post) {
     return <div>Post not found</div>;
   }
 
-  const imageSrc =
-    mongoProfileImage && mongoProfileImage !== "null"
-      ? mongoProfileImage
-      : DEFAULT_AVATAR;
-
   return (
     <div>
-      <BackButton />
+      <BackButton hasAncestors={ancestors.length > 0} />
       <div className="w-full flex flex-col justify-start items-start">
         <div className="bg-white  w-full max-w-xl border border-gray-200 sm:rounded-2xl  mb-5 overflow-hidden py-5">
-          <AncestorTrail />
+          <AncestorTrail ancestors={ancestors} />
 
           <div
             key={post._id}
             className={`${comments.length === 0 ? "" : "border-b"} pb-5 `}
           >
             <div className="px-5">
-              <PostCard post={post} parentPost={null} />
+              <PostCard post={post} />
             </div>
           </div>
+
+          {comments.length > 0 && (
+            <div className="px-5 pt-4">
+              <h3 className="text-sm font-semibold text-muted-foreground tracking-tight">
+                Comments
+              </h3>
+            </div>
+          )}
 
           <div className="flex flex-col gap-5 pt-5 ">
             {comments?.map((comment: PostType, index) => {
@@ -58,7 +63,7 @@ const PostPage = async ({
                   className={`${index === comments.length - 1 ? "" : "pb-4 border-b "}`}
                 >
                   <div className="px-5">
-                    <PostCard post={comment} parentPost={post} />
+                    <PostCard post={comment} />
                   </div>
                 </div>
               );
