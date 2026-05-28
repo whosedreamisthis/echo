@@ -36,14 +36,23 @@ const PostCard = ({
     router.push(`/@${post.userId?.username}`); // 👈 Premium clean URL structure
   };
 
+  // Check if we should show the repost header.
+  // We show it if showRepostHeader is true OR if the first item in reposts is an object (populated)
+  const firstReposter =
+    post.reposts &&
+    post.reposts.length > 0 &&
+    typeof post.reposts[0] === "object"
+      ? (post.reposts[0] as { name: string })
+      : null;
+
   return (
     // Wrap the card layout in an outer block container so the repost header stays inline
     <div className="flex flex-col w-full">
       {/* 🔄 2. Dynamic Repost Notification Banner */}
-      {showRepostHeader && (
+      {(showRepostHeader || firstReposter) && (
         <div className="flex items-center gap-2 text-zinc-500 text-xs font-semibold mb-2 pl-8">
           <Repeat2 className="w-3.5 h-3.5 stroke-[2.5]" />
-          <span>You reposted</span>
+          <span>{firstReposter?.name || "Someone"} reposted</span>
         </div>
       )}
 

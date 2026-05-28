@@ -47,6 +47,7 @@ export async function getUserProfileFeed(
         path: "postId",
         populate: { path: "userId", select: "username profilePicture" },
       })
+      .populate("userId", "name")
       .lean();
 
     hasNextPage = repostEntries.length > limitValue;
@@ -54,8 +55,21 @@ export async function getUserProfileFeed(
       ? repostEntries.slice(0, limitValue)
       : repostEntries;
 
-    // Extract the nested populated posts
-    posts = slicedEntries.map((entry: any) => entry.postId).filter(Boolean);
+    // Extract the nested populated posts and add reposter info to reposts array
+    posts = slicedEntries
+      .map((entry: any) => {
+        if (!entry.postId) return null;
+        return {
+          ...entry.postId,
+          reposts: [
+            {
+              _id: entry.userId._id.toString(),
+              name: entry.userId.name,
+            },
+          ],
+        };
+      })
+      .filter(Boolean);
 
     // Track cursor from the Repost document timestamps, not the original post
     if (slicedEntries.length > 0) {

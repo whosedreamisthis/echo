@@ -4,6 +4,7 @@ import connectDB from "@/lib/db";
 import Post from "@/models/Post";
 import User from "@/models/User";
 import Save from "@/models/Save";
+import Repost from "@/models/Repost";
 import { getPlainPosts } from "@/app/actions/utils"; // 👈 Clean import!
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
@@ -15,57 +16,119 @@ export async function getPosts(
   cursor?: { createdAt: string; id: string } | null,
 ) {
   await connectDB();
-  const EnsureUserSchema = User || mongoose.model("User");
+  const limitValue = 20;
 
-  let queryFilter: any = { parentId: null };
-
-  if (cursor) {
-    queryFilter.$or = [
-      { createdAt: { $lt: new Date(cursor.createdAt) } },
-      {
-        createdAt: new Date(cursor.createdAt),
-        _id: { $lt: new mongoose.Types.ObjectId(cursor.id) },
-      },
-    ];
-  }
-
-  // ⚡ FIX: Find the local MongoDB user document first
+  // 1. Determine current user context
   let currentUserDoc = null;
   if (currentClerkUserId) {
     currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
-    if (currentUserDoc) {
-      // Exclude the user's own posts from the feed if that's your goal
-      queryFilter = { ...queryFilter, userId: { $ne: currentUserDoc._id } };
-    }
   }
 
-  const limitValue = 20;
+  // 2. Build filters
+  let postFilter: any = { parentId: null };
+  let repostFilter: any = {};
 
-  const posts = await Post.find(queryFilter)
-    .sort({ createdAt: -1, _id: -1 })
-    .limit(limitValue + 1)
-    .populate("userId", "username profilePicture")
-    .lean();
+  if (cursor) {
+    const cursorDate = new Date(cursor.createdAt);
+    const cursorId = new mongoose.Types.ObjectId(cursor.id);
 
-  const hasNextPage = posts.length > limitValue;
-  const slicedPosts = hasNextPage ? posts.slice(0, limitValue) : posts;
+    const cursorQuery = {
+      $or: [
+        { createdAt: { $lt: cursorDate } },
+        {
+          createdAt: cursorDate,
+          _id: { $lt: cursorId },
+        },
+      ],
+    };
 
-  let savedPostIdsStrings: string[] = [];
+    postFilter = { ...postFilter, ...cursorQuery };
+    repostFilter = { ...repostFilter, ...cursorQuery };
+  }
 
-  // ⚡ FIX: Query the Save collection using the MongoDB ObjectId (_id), NOT the clerkId string
+  // Optional: Exclude current user's own activity from global feed
   if (currentUserDoc) {
+    postFilter.userId = { $ne: currentUserDoc._id };
+    repostFilter.userId = { $ne: currentUserDoc._id };
+  }
+
+  // 3. Fetch from both collections
+  const [posts, repostEntries] = await Promise.all([
+    Post.find(postFilter)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limitValue + 1)
+      .populate("userId", "username profilePicture")
+      .lean(),
+    Repost.find(repostFilter)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limitValue + 1)
+      .populate({
+        path: "postId",
+        populate: { path: "userId", select: "username profilePicture" },
+      })
+      .populate("userId", "name")
+      .lean(),
+  ]);
+
+  // 4. Transform Reposts to look like Posts for the feed
+  const transformedReposts = repostEntries
+    .map((entry: any) => {
+      if (!entry.postId) return null;
+      return {
+        ...entry.postId,
+        originalPostId: entry.postId._id.toString(), // Keep reference for Save checks
+        createdAt: entry.createdAt, // Use repost date for sorting
+        _id: entry._id, // Use repost ID for cursor consistency
+        reposts: [
+          {
+            _id: entry.userId._id,
+            name: entry.userId.name,
+          },
+        ],
+      };
+    })
+    .filter(Boolean);
+
+  // 5. Merge, Sort, and Slice
+  const combinedFeed = [...posts, ...transformedReposts]
+    .sort((a: any, b: any) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      // Secondary sort by ID if timestamps match
+      return b._id.toString().localeCompare(a._id.toString());
+    })
+    .slice(0, limitValue + 1);
+
+  const hasNextPage = combinedFeed.length > limitValue;
+  const slicedFeed = hasNextPage
+    ? combinedFeed.slice(0, limitValue)
+    : combinedFeed;
+
+  // 6. Handle Save States
+  let savedPostIdsStrings: string[] = [];
+  if (currentUserDoc && slicedFeed.length > 0) {
+    const postIdsForSaveCheck = slicedFeed.map((item: any) =>
+      item.originalPostId ? item.originalPostId : item._id.toString(),
+    );
+
     const savedRecords = await Save.find({
-      userId: currentUserDoc._id, // ✅ Correctly matches the format in your DB
-      postId: { $in: slicedPosts.map((p) => p._id) },
+      userId: currentUserDoc._id,
+      postId: { $in: postIdsForSaveCheck },
     }).distinct("postId");
 
     savedPostIdsStrings = savedRecords.map((id) => id.toString());
   }
 
-  const postsWithSaveState = slicedPosts.map((post) => ({
-    ...post,
-    isSaved: savedPostIdsStrings.includes(post._id.toString()),
-  }));
+  const postsWithSaveState = slicedFeed.map((post: any) => {
+    const idToCompare = post.originalPostId
+      ? post.originalPostId
+      : post._id.toString();
+    return {
+      ...post,
+      isSaved: savedPostIdsStrings.includes(idToCompare),
+    };
+  });
 
   const plainPosts = getPlainPosts(postsWithSaveState);
 

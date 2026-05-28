@@ -15,7 +15,17 @@ export function getPlainPosts(posts: PostType[]) {
             }
           : post.userId,
       likes: post.likes?.map((id: any) => id.toString()) || [],
-      reposts: post.reposts?.map((id: any) => id.toString()) || [],
+      reposts:
+        post.reposts?.map((item: any) => {
+          if (typeof item === "object" && item !== null && item._id) {
+            return {
+              _id: item._id.toString(),
+              name: item.name || "",
+              username: item.username || "",
+            };
+          }
+          return item.toString();
+        }) || [],
       shares: post.shares?.map((id: any) => id.toString()) || [],
       commentCount: post.commentCount || 0,
       createdAt:

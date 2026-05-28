@@ -113,7 +113,7 @@ const Feed = ({
         >
           <div className="px-5">
             {/* If it's a repost view, you can optionally pass an indicator prop here */}
-            <PostCard post={post} showRepostHeader={feedType === "reposts"} />
+            <PostCard post={post} />
           </div>
         </div>
       ))}

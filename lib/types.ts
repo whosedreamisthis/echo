@@ -23,7 +23,7 @@ export interface PostType {
     profilePicture?: string;
   };
   likes: string[]; // Array of User IDs who liked
-  reposts: string[]; // Array of User IDs who reposted
+  reposts: (string | { _id: string; name: string; username?: string })[]; // Array of User IDs or Objects
   shares: string[]; // Array of User IDs who shared
   commentCount: number;
   comments?: PostType[];
