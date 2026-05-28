@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, Search, PlusSquare, Bell, User } from "lucide-react";
+import { Home, Search, PlusSquare, Bookmark, User } from "lucide-react";
 import { CreateEchoModal } from "@/components/create-echo-modal";
 import Link from "next/link";
 import Logo from "@/components/logo"; // Your modal component
@@ -19,10 +19,10 @@ const NAV_ITEMS = [
   },
   { id: "create", label: "Create", icon: PlusSquare, type: "button" }, // 1. Removed href, added type
   {
-    id: "notifications",
-    label: "Notifications",
-    href: "/notifications",
-    icon: Bell,
+    id: "saved",
+    label: "Saved",
+    href: "/saved",
+    icon: Bookmark,
     type: "link",
   },
   {

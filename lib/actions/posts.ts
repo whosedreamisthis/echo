@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import connectDB from "@/lib/db";
 import Post from "@/models/Post";
 import User from "@/models/User";
+import Save from "@/models/Save";
 import mongoose from "mongoose";
 import { PostType } from "@/lib/types";
 
@@ -382,5 +383,97 @@ export async function toggleLike(postId: string) {
     return { success: true, hasLiked: !hasLiked };
   } catch (error: any) {
     return { success: false, error: error.message };
+  }
+}
+
+export async function toggleSavePost(postId: string) {
+  const { userId: clerkUserId } = await auth();
+
+  if (!clerkUserId) {
+    return { success: false, error: "User not authenticated" };
+  }
+
+  const mongoUser = await User.findOne({ clerkId: clerkUserId });
+
+  if (!mongoUser) {
+    return { success: false, error: "User profile not found in database." };
+  }
+
+  try {
+    // 1. Get the logged-in user's ID directly from your session/auth framework
+    // const { userId: currentUserId } = await auth();
+    const currentUserId = mongoUser._id; // Replace with your actual auth extraction
+
+    if (!currentUserId) {
+      throw new Error("Unauthorized");
+    }
+
+    // 2. Query MongoDB
+    const existingSave = await Save.findOne({ userId: currentUserId, postId });
+
+    if (existingSave) {
+      await Save.findByIdAndDelete(existingSave._id);
+
+      // Forces Next.js to clear its cache and update the UI instantly
+      revalidatePath("/");
+      return { saved: false, message: "Post unsaved" };
+    }
+
+    const newSave = new Save({ userId: currentUserId, postId });
+    await newSave.save();
+
+    revalidatePath("/");
+    return { saved: true, message: "Post saved successfully" };
+  } catch (error: any) {
+    console.error("Save action error:", error);
+    return { error: error.message || "Something went wrong" };
+  }
+}
+
+export async function getSavedPosts(page: number = 1) {
+  const { userId: clerkUserId } = await auth();
+
+  if (!clerkUserId) {
+    return { success: false, error: "User not authenticated" };
+  }
+
+  const mongoUser = await User.findOne({ clerkId: clerkUserId });
+
+  if (!mongoUser) {
+    return { success: false, error: "User profile not found in database." };
+  }
+
+  try {
+    const currentUserId = mongoUser._id; // Replace with your actual auth extraction
+    const limit = 10;
+
+    if (!currentUserId) {
+      throw new Error("Unauthorized");
+    }
+
+    const savedItems = await Save.find({ userId: currentUserId })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate({
+        path: "postId",
+        populate: {
+          path: "userId",
+          select: "name username avatar profilePicture",
+        },
+      });
+
+    // Extract out just the actual populated post documents
+    const posts = savedItems
+      .filter((item) => item.postId !== null)
+      .map((item) => {
+        // Convert Mongoose doc to plain JS object so Next.js components can read it safely
+        return JSON.parse(JSON.stringify(item.postId));
+      });
+
+    return { posts };
+  } catch (error: any) {
+    console.error("Get saved posts error:", error);
+    return { error: error.message, posts: [] };
   }
 }
