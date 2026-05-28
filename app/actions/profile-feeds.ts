@@ -61,6 +61,7 @@ export async function getUserProfileFeed(
         if (!entry.postId) return null;
         return {
           ...entry.postId,
+          originalPostId: entry.postId._id.toString(),
           reposts: [
             {
               _id: entry.userId._id.toString(),

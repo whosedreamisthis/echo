@@ -28,7 +28,8 @@ const PostCard = ({
       : DEFAULT_AVATAR;
 
   const handlePostCardClick = (e: React.MouseEvent) => {
-    router.push(`/post/${post._id}`);
+    const targetId = post.originalPostId || post._id;
+    router.push(`/post/${targetId}`);
   };
 
   const handleUserClick = (e: React.MouseEvent) => {

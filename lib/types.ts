@@ -28,4 +28,5 @@ export interface PostType {
   commentCount: number;
   comments?: PostType[];
   isSaved?: boolean;
+  originalPostId?: string;
 }

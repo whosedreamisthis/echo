@@ -34,6 +34,9 @@ export function getPlainPosts(posts: PostType[]) {
           : post.createdAt,
       // ⚡ FIX 1: Pass along our calculated save boolean flag through the plain serializer wrapper
       isSaved: !!post.isSaved,
+      originalPostId: post.originalPostId
+        ? post.originalPostId.toString()
+        : undefined,
     };
   });
 }
