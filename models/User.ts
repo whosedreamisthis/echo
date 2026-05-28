@@ -8,7 +8,7 @@ export interface IUser extends Document {
   profilePicture?: string;
   name: string; // New: Display Name, e.g., "The Witness"
   bio?: string; // New: Max length usually around 150-160 chars
-  website?: string; // New: A clickable profile link
+  website?: string; // New: A clickable user link
   createdAt: Date;
 }
 

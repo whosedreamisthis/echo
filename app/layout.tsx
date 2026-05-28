@@ -27,23 +27,30 @@ export default async function RootLayout({
   const { userId } = await auth();
 
   let databaseProfileImage: string | null = null;
-
+  let username;
   // 2. Look up the user document inside your MongoDB table
   if (userId) {
     await connectDB();
 
     const dbUser = await User.findOne({ clerkId: userId }).select(
-      "profilePicture",
+      "profilePicture username",
     );
     if (dbUser?.profilePicture) {
       databaseProfileImage = dbUser.profilePicture;
+      console.log(databaseProfileImage);
     }
+    console.log("username", dbUser?.username);
+    console.log("userId", userId);
+    username = dbUser?.username || "";
   }
   return (
     <html lang="en" className={`${interSans.variable} antialiased`}>
       <ClerkProvider>
         <body className="font-sans bg-background text-foreground min-h-full flex flex-col md:flex-row">
-          <Navigation profileImage={databaseProfileImage || "/profile.png"} />
+          <Navigation
+            profileImage={databaseProfileImage || "/user.png"}
+            username={username}
+          />
 
           <main className="flex-1 pb-16 sm:pb-0 sm:p-8">
             {children}

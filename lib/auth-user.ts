@@ -34,7 +34,7 @@ export async function getSessionUser(): Promise<SessionUser> {
     // Ensure Schema is registered
     const EnsureUserSchema = User || mongoose.model("User");
 
-    // Fetch both the ID and profile picture in ONE single query
+    // Fetch both the ID and user picture in ONE single query
     const dbUser = await User.findOne({ clerkId: userId }).select(
       "_id profilePicture username",
     );

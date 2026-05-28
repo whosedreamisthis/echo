@@ -28,13 +28,19 @@ const NAV_ITEMS = [
   {
     id: "profile",
     label: "Profile",
-    href: "/profile",
+    href: "/user",
     icon: User,
     type: "link",
   },
 ];
 
-export default function Navigation({ profileImage }: { profileImage: string }) {
+export default function Navigation({
+  profileImage,
+  username,
+}: {
+  profileImage: string;
+  username: string;
+}) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const pathname = usePathname();
   const initialActive = pathname.split("/")[1] || "home";
@@ -73,6 +79,18 @@ export default function Navigation({ profileImage }: { profileImage: string }) {
                 <Icon className="h-6 w-6" />
                 <span className="hidden md:inline">{item.label}</span>
               </button>
+            );
+          } else if (item.id === "profile") {
+            return (
+              <Link
+                key={item.label}
+                href={`/@${username}`}
+                className={`flex items-center gap-4 ${active === item.id ? "text-primary" : "text-muted-foreground"} hover:text-foreground`}
+                onClick={() => setActive(item.id)}
+              >
+                <Icon className="h-6 w-6" />
+                <span className="hidden md:inline">{item.label}</span>
+              </Link>
             );
           } else {
             return (

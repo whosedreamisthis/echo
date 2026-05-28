@@ -29,6 +29,12 @@ export async function createEphemeralDemoUser() {
     const email = `${username}@demoapp.com`;
     const password = Math.random().toString(36) + "Ab1!";
 
+    const displayName = username
+      .replace("demo_", "Demo ")
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+
     // 1. Create the user in Clerk programmatically
     const clerkUser = await clerkClient.users.createUser({
       emailAddress: [email],
@@ -41,6 +47,9 @@ export async function createEphemeralDemoUser() {
       clerkId: clerkUser.id,
       username: username,
       email: email,
+      name: displayName,
+      bio: "Checking out this awesome Threads clone! 🚀",
+      website: "https://github.com",
       profilePicture: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
     });
 

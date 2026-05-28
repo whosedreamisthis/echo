@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        // Matches /@username and captures the username part
+        source: "/@:username",
+        destination: "/user/:username",
+      },
+    ];
+  },
   images: {
     dangerouslyAllowSVG: true, // 🍉 Allow Next.js to render SVG graphics
     contentDispositionType: "attachment",

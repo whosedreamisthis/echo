@@ -353,7 +353,7 @@ export async function createEcho(
 
     const mongoUser = await User.findOne({ clerkId: clerkUserId });
     if (!mongoUser)
-      return { success: false, error: "User profile not found in database." };
+      return { success: false, error: "User user not found in database." };
 
     const newPost = await Post.create({
       userId: mongoUser._id,
@@ -418,7 +418,7 @@ export async function toggleSavePost(postId: string) {
   await connectDB();
   const mongoUser = await User.findOne({ clerkId: clerkUserId });
   if (!mongoUser)
-    return { success: false, error: "User profile not found in database." };
+    return { success: false, error: "User user not found in database." };
 
   try {
     const currentUserId = mongoUser._id;
@@ -448,7 +448,7 @@ export async function getSavedPosts(page: number = 1) {
   await connectDB();
   const mongoUser = await User.findOne({ clerkId: clerkUserId });
   if (!mongoUser)
-    return { posts: [], error: "User profile not found in database." };
+    return { posts: [], error: "User user not found in database." };
 
   try {
     const currentUserId = mongoUser._id;
