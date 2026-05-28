@@ -23,7 +23,7 @@ const PostCard = ({ post, showThreadLine = false }: PostCardProps) => {
       : DEFAULT_AVATAR;
 
   const handlePostCardClick = (e: React.MouseEvent) => {
-    router.push(`/posts/${post._id}`);
+    router.push(`/post/${post._id}`);
   };
 
   return (

@@ -190,7 +190,7 @@ export async function getPostsWithParent(parentId: string) {
   await connectDB();
   const EnsureUserSchema = User || mongoose.model("User");
 
-  let queryFilter: any = {
+  const queryFilter: any = {
     parentId: new mongoose.Types.ObjectId(parentId),
   };
 
@@ -274,7 +274,7 @@ export async function getPostById(postId: string) {
       const allTargetPostIds = [
         targetPostRaw._id,
         ...commentsRaw.map((c) => c._id),
-        ...orderedAncestors.map((a) => a._id),
+        ...orderedAncestors.map((a: any) => a._id),
       ];
       const savedRecords = await Save.find({
         userId: currentUserDoc._id,
@@ -320,7 +320,7 @@ export async function getPostById(postId: string) {
     }));
 
     // ⚡ FIX: Apply the exact same logic to your ancestors array so they don't break either!
-    const ancestorsWithSaveState = orderedAncestors.map((ancestor) => ({
+    const ancestorsWithSaveState = orderedAncestors.map((ancestor: any) => ({
       ...ancestor,
       isSaved: savedPostIdsStrings.includes(ancestor._id.toString()),
     }));
@@ -363,7 +363,7 @@ export async function createEcho(
 
     if (parentId) {
       await Post.findByIdAndUpdate(parentId, { $inc: { commentCount: 1 } });
-      revalidatePath(`/posts/${parentId}`);
+      revalidatePath(`/post/${parentId}`);
     }
 
     revalidatePath("/");

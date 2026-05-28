@@ -1,12 +1,13 @@
 import mongoose, { Schema, Document, model, models } from "mongoose";
+import { ISave } from "@/models/Save";
 
-export interface ISave extends Document {
+export interface IRepost extends Document {
   userId: mongoose.Types.ObjectId;
   postId: mongoose.Types.ObjectId;
   createdAt: Date;
 }
 
-const SaveSchema = new mongoose.Schema({
+const RepostSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -23,7 +24,7 @@ const SaveSchema = new mongoose.Schema({
   },
 });
 
-SaveSchema.index({ userId: 1, postId: 1 }, { unique: true });
+RepostSchema.index({ userId: 1, postId: 1 }, { unique: true });
 
-const Save = models.Save || model<ISave>("Save", SaveSchema);
-export default Save;
+const Repost = models.Repost || model<IRepost>("Repost", RepostSchema);
+export default Repost;

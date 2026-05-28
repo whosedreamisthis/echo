@@ -23,7 +23,7 @@ const PostCardMenu = ({ postId, initialIsSaved }: PostCardMenuProps) => {
 
   const handleCopyLink = (e: Event) => {
     e.preventDefault();
-    const postUrl = `${window.location.origin}/posts/${postId}`;
+    const postUrl = `${window.location.origin}/post/${postId}`;
 
     navigator.clipboard
       .writeText(postUrl)

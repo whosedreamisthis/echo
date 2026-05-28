@@ -8,6 +8,7 @@ export interface IPost extends Document {
   reposts: mongoose.Types.ObjectId[];
   shares: mongoose.Types.ObjectId[];
   commentCount: number;
+  repostCount: number;
   createdAt: Date;
 }
 
@@ -19,6 +20,7 @@ const PostSchema = new Schema<IPost>({
   reposts: [{ type: Schema.Types.ObjectId, ref: "User" }], // Array of User IDs
   shares: [{ type: Schema.Types.ObjectId, ref: "User" }], // Array of User IDs
   commentCount: { type: Number, default: 0 },
+  repostCount: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
 });
 

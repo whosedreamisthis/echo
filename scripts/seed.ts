@@ -1,8 +1,8 @@
-// scripts/seed.ts
 import mongoose from "mongoose";
 import connectDB from "../lib/db";
 import User from "@/models/User";
 import Post from "@/models/Post";
+import Repost from "@/models/Repost"; // 👈 Import your new Repost model
 
 const POST_TEMPLATES = [
   "Just deploying my new Next.js app. The DX is incredible! 🚀",
@@ -22,16 +22,20 @@ const COMMENT_TEMPLATES = [
   "Love the energy here! 🙌",
 ];
 
+// Helper to convert usernames to Readable Names for the new schema field
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 async function seedDatabase() {
   try {
     console.log("⏳ Connecting to MongoDB...");
     await connectDB();
 
-    console.log("🧹 Clearing existing Users and Posts...");
+    console.log("🧹 Clearing existing Users, Posts, and Reposts...");
     await User.deleteMany({});
     await Post.deleteMany({});
+    await Repost.deleteMany({}); // 👈 Clear previous repost entries
 
-    console.log("👥 Creating seed community users...");
+    console.log("👥 Creating seed community users with bios and profiles...");
     const usernames = [
       "alice_dev",
       "bob_codes",
@@ -39,14 +43,21 @@ async function seedDatabase() {
       "dana_design",
       "evan_builds",
     ];
-    const seedUsers = [];
+    const seedUsers: any[] = [];
 
     for (const username of usernames) {
+      // Create readable display name (e.g., "alice_dev" -> "Alice Dev")
+      const displayName = username.split("_").map(capitalize).join(" ");
+
       const user = await User.create({
         clerkId: `seed_user_${Math.random().toString(36).substring(2, 15)}`,
         username,
         email: `${username}@seed.local`,
         profilePicture: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+        // 👇 Your new fields populated beautifully
+        name: displayName,
+        bio: `Software engineer & Threads clone builder. Passionate about Next.js and Mongo. ✨`,
+        website: `https://${username}.dev`,
       });
       seedUsers.push(user);
     }
@@ -63,31 +74,40 @@ async function seedDatabase() {
         POST_TEMPLATES[Math.floor(Math.random() * POST_TEMPLATES.length)] +
         ` (#${i + 1})`;
 
-      // Helper function to get a random assortment of users for metrics
-      const getRandomUserIds = () => {
+      // Helper function to get an array of random user documents for interactions
+      const getRandomUsersList = () => {
         const count = Math.floor(Math.random() * (seedUsers.length + 1));
-        return [...seedUsers]
-          .sort(() => 0.5 - Math.random())
-          .slice(0, count)
-          .map((user) => user._id);
+        return [...seedUsers].sort(() => 0.5 - Math.random()).slice(0, count);
       };
 
-      const likes = getRandomUserIds();
-      const reposts = getRandomUserIds();
-      const shares = getRandomUserIds();
+      const likes = getRandomUsersList().map((u) => u._id);
+      const shares = getRandomUsersList().map((u) => u._id);
+      const usersWhoReposted = getRandomUsersList(); // Keep full documents to generate Repost rows
 
-      // Create the post
+      // Create the main post
       const post = await Post.create({
         userId: postAuthor._id,
         content,
         likes,
-        reposts,
         shares,
+        repostCount: usersWhoReposted.length, // 👈 Store the count directly as an integer
         commentCount: 0,
         createdAt: new Date(
           Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 7,
         ),
       });
+
+      // 👇 NEW: Generate separate collection entries for the Reposts!
+      for (const user of usersWhoReposted) {
+        await Repost.create({
+          userId: user._id,
+          postId: post._id,
+          // Generate a timestamp shortly after the original post creation
+          createdAt: new Date(
+            post.createdAt.getTime() + Math.random() * 1000 * 60 * 60 * 2,
+          ),
+        });
+      }
 
       // Generate random comments as posts
       const commentsCount = Math.floor(Math.random() * 5);
@@ -100,18 +120,31 @@ async function seedDatabase() {
             Math.floor(Math.random() * COMMENT_TEMPLATES.length)
           ];
 
-        await Post.create({
+        const commentUsersWhoReposted = getRandomUsersList();
+
+        const commentPost = await Post.create({
           userId: commentAuthor._id,
           parentId: post._id,
           content: commentContent,
-          likes: getRandomUserIds(),
-          reposts: getRandomUserIds(),
-          shares: getRandomUserIds(),
+          likes: getRandomUsersList().map((u) => u._id),
+          shares: getRandomUsersList().map((u) => u._id),
+          repostCount: commentUsersWhoReposted.length, // 👈 Integer count
           commentCount: 0,
           createdAt: new Date(
             post.createdAt.getTime() + Math.random() * 1000 * 60 * 60 * 24,
           ),
         });
+
+        // Generate collection rows for comment reposts
+        for (const user of commentUsersWhoReposted) {
+          await Repost.create({
+            userId: user._id,
+            postId: commentPost._id,
+            createdAt: new Date(
+              commentPost.createdAt.getTime() + Math.random() * 1000 * 60 * 60,
+            ),
+          });
+        }
       }
 
       // Update the parent post's comment count
@@ -123,9 +156,14 @@ async function seedDatabase() {
     }
 
     console.log(`✅ Success! Background sandbox environment seeded:`);
-    console.log(`   - ${seedUsers.length} Constant Seed Users (The Community)`);
     console.log(
-      `   - ${TOTAL_POSTS} Active posts populated with interactions (likes, reposts, shares, comments).`,
+      `   - ${seedUsers.length} Constant Seed Users (with full bios and names)`,
+    );
+    console.log(
+      `   - ${TOTAL_POSTS} Active posts, tracking metrics via integers.`,
+    );
+    console.log(
+      `   - Repost data fully migrated into its own separate relational collection.`,
     );
   } catch (error) {
     console.error("❌ Seeding failed:", error);
