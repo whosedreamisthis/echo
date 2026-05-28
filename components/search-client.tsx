@@ -3,22 +3,46 @@
 import React, { useState, useEffect } from "react";
 import { Search as SearchIcon } from "lucide-react";
 import SearchFeed from "@/components/search-feed";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 interface SearchClientProps {
   currentClerkUserId?: string | null;
 }
 
 const SearchClient = ({ currentClerkUserId }: SearchClientProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedTerm, setDebouncedTerm] = useState("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
+  const initialQuery = searchParams.get("q") || "";
+  const [searchTerm, setSearchTerm] = useState(initialQuery);
+  const [debouncedTerm, setDebouncedTerm] = useState(initialQuery);
+
+  // Debounce the searchTerm and update the URL and debouncedTerm
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedTerm(searchTerm);
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (searchTerm) {
+        params.set("q", searchTerm);
+      } else {
+        params.delete("q");
+      }
+
+      // Update URL without adding to history stack for every keystroke if possible,
+      // but standard router.push/replace is fine here since we want back button to work.
+      // However, we only want to update URL with the debounced term to avoid history bloat.
+      const newUrl = `${pathname}?${params.toString()}`;
+      if (params.toString()) {
+        router.replace(newUrl);
+      } else {
+        router.replace(pathname);
+      }
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, pathname, router, searchParams]);
 
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col items-center">
@@ -38,9 +62,6 @@ const SearchClient = ({ currentClerkUserId }: SearchClientProps) => {
         </div>
       </div>
 
-      {/* 3. FIXED FEED CONTAINER: Added 'relative z-0' so the browser explicitly
-           knows this layer sits completely underneath the z-50 header.
-      */}
       <div className="w-full sm:rounded-2xl mt-4 mb-5 overflow-hidden border border-gray-200 bg-white min-h-[50vh] relative z-0">
         <SearchFeed
           query={debouncedTerm}
