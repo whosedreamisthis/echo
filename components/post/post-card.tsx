@@ -35,7 +35,7 @@ const PostCard = ({ post, showThreadLine = false }: PostCardProps) => {
       {/* 🍉 The Dynamic Thread Line */}
       {showThreadLine && (
         <div
-          className="absolute bg-gray-200 z-10"
+          className="absolute bg-gray-200 z-30"
           style={{
             width: "2px",
             left: "15px", // Exactly centers it under a 32px (w-8) avatar
@@ -71,7 +71,7 @@ const PostCard = ({ post, showThreadLine = false }: PostCardProps) => {
               </p>
             </div>
             <div className="absolute -right-3 -top-5">
-              <PostCardMenu postId={post._id} />
+              <PostCardMenu postId={post._id} initialIsSaved={post.isSaved} />
             </div>
           </div>
           <p className="text-sm text-foreground break-words">{post.content}</p>

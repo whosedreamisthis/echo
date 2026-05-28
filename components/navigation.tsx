@@ -50,7 +50,7 @@ export default function Navigation({ profileImage }: { profileImage: string }) {
 
         /* Desktop (md and up): Left Sidebar */
         md:sticky md:top-0 md:left-0 md:h-screen md:flex-col md:justify-start md:items-start  md:p-6 md:gap-6
-       z-100"
+       z-40"
         style={{ backgroundColor: "#f8f8f8" }}
       >
         <div className="hidden md:block text-2xl font-bold mb-4 tracking-wider">

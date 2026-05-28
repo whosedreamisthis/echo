@@ -23,29 +23,29 @@ function getPlainPosts(posts: PostType[]) {
               profilePicture: post.userId.profilePicture || null,
             }
           : post.userId,
-      // 👇 Don't forget to stringify arrays of ObjectIds and Dates too!
       likes: post.likes?.map((id: any) => id.toString()) || [],
       reposts: post.reposts?.map((id: any) => id.toString()) || [],
       shares: post.shares?.map((id: any) => id.toString()) || [],
       commentCount: post.commentCount || 0,
-      createdAt: post.createdAt.toISOString(),
+      createdAt:
+        post.createdAt instanceof Date
+          ? post.createdAt.toISOString()
+          : post.createdAt,
+      // ⚡ FIX 1: Pass along our calculated save boolean flag through the plain serializer wrapper
+      isSaved: !!post.isSaved,
     };
   });
 }
 
-// 🍉 Pass the optional currentClerkUserId into the function
-// lib/actions/posts.ts
-
 export async function getPosts(
   currentClerkUserId?: string | null,
-  cursor?: { createdAt: string; id: string } | null, // 🍉 Accept a compound object
+  cursor?: { createdAt: string; id: string } | null,
 ) {
   await connectDB();
   const EnsureUserSchema = User || mongoose.model("User");
 
   let queryFilter: any = { parentId: null };
 
-  // 🍉 Tie-breaker query logic
   if (cursor) {
     queryFilter.$or = [
       { createdAt: { $lt: new Date(cursor.createdAt) } },
@@ -56,8 +56,10 @@ export async function getPosts(
     ];
   }
 
+  // Find current user profile
+  let currentUserDoc = null;
   if (currentClerkUserId) {
-    const currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
+    currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
     if (currentUserDoc) {
       queryFilter = { ...queryFilter, userId: { $ne: currentUserDoc._id } };
     }
@@ -65,7 +67,6 @@ export async function getPosts(
 
   const limitValue = 20;
 
-  // 🍉 Ensure you sort by BOTH fields to keep the database performance stable
   const posts = await Post.find(queryFilter)
     .sort({ createdAt: -1, _id: -1 })
     .limit(limitValue + 1)
@@ -74,14 +75,30 @@ export async function getPosts(
 
   const hasNextPage = posts.length > limitValue;
   const slicedPosts = hasNextPage ? posts.slice(0, limitValue) : posts;
-  const plainPosts = getPlainPosts(slicedPosts);
 
-  // 🍉 Construct the compound next cursor from the final element
+  // ⚡ FIX 2: Check database saves collection for the current user feed lookup
+  let savedPostIdsStrings: string[] = [];
+  if (currentUserDoc) {
+    const savedRecords = await Save.find({
+      userId: currentUserDoc._id,
+      postId: { $in: slicedPosts.map((p) => p._id) },
+    }).distinct("postId");
+    savedPostIdsStrings = savedRecords.map((id) => id.toString());
+  }
+
+  // Inject isSaved flag into posts payload array
+  const postsWithSaveState = slicedPosts.map((post) => ({
+    ...post,
+    isSaved: savedPostIdsStrings.includes(post._id.toString()),
+  }));
+
+  const plainPosts = getPlainPosts(postsWithSaveState);
+
   let nextCursor = null;
   if (hasNextPage && plainPosts.length > 0) {
     const lastPost = plainPosts[plainPosts.length - 1];
     nextCursor = {
-      createdAt: lastPost.createdAt, // This is already an ISO string from getPlainPosts
+      createdAt: lastPost.createdAt,
       id: lastPost._id,
     };
   }
@@ -114,8 +131,9 @@ export async function searchPosts(
     ];
   }
 
+  let currentUserDoc = null;
   if (currentClerkUserId) {
-    const currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
+    currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
     if (currentUserDoc) {
       queryFilter = { ...queryFilter, userId: { $ne: currentUserDoc._id } };
     }
@@ -131,7 +149,23 @@ export async function searchPosts(
 
   const hasNextPage = posts.length > limitValue;
   const slicedPosts = hasNextPage ? posts.slice(0, limitValue) : posts;
-  const plainPosts = getPlainPosts(slicedPosts);
+
+  // ⚡ FIX 3: Apply the same check to Search results
+  let savedPostIdsStrings: string[] = [];
+  if (currentUserDoc) {
+    const savedRecords = await Save.find({
+      userId: currentUserDoc._id,
+      postId: { $in: slicedPosts.map((p) => p._id) },
+    }).distinct("postId");
+    savedPostIdsStrings = savedRecords.map((id) => id.toString());
+  }
+
+  const postsWithSaveState = slicedPosts.map((post) => ({
+    ...post,
+    isSaved: savedPostIdsStrings.includes(post._id.toString()),
+  }));
+
+  const plainPosts = getPlainPosts(postsWithSaveState);
 
   let nextCursor = null;
   if (hasNextPage && plainPosts.length > 0) {
@@ -147,11 +181,8 @@ export async function searchPosts(
 
 export async function getPostsWithParent(parentId: string) {
   await connectDB();
-
-  // Force the bundler to keep the registration by referencing it explicitly
   const EnsureUserSchema = User || mongoose.model("User");
 
-  // 1. Initialize an empty query filter object
   let queryFilter: any = {
     parentId: new mongoose.Types.ObjectId(parentId),
   };
@@ -163,21 +194,21 @@ export async function getPostsWithParent(parentId: string) {
     .lean();
 
   const plainPosts = getPlainPosts(posts);
-
   return { posts: plainPosts };
 }
 
-// lib/actions/posts.ts
-// lib/actions/posts.ts
-// lib/actions/posts.ts
 export async function getPostById(postId: string) {
   await connectDB();
-
   const EnsureUserSchema = User || mongoose.model("User");
   const EnsurePostSchema = Post || mongoose.model("Post");
 
+  const { userId: clerkUserId } = await auth();
+  let currentUserDoc = null;
+  if (clerkUserId) {
+    currentUserDoc = await User.findOne({ clerkId: clerkUserId });
+  }
+
   try {
-    // 1. Fetch the target post and its recursive ancestors
     const aggregationResults = await Post.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(postId) } },
       {
@@ -195,7 +226,6 @@ export async function getPostById(postId: string) {
 
     const targetPostRaw = aggregationResults[0];
 
-    // 2. Fetch the comments (replies) belonging to the target post
     const commentsRaw = await Post.find({
       parentId: new mongoose.Types.ObjectId(postId),
     })
@@ -203,7 +233,6 @@ export async function getPostById(postId: string) {
       .sort({ createdAt: 1 })
       .lean();
 
-    // 🍉 FIX: Get the target post's userId AND all ancestor userIds to populate everything at once
     const allUserIds = [
       targetPostRaw.userId,
       ...targetPostRaw.rawAncestors.map((a: any) => a.userId),
@@ -217,12 +246,10 @@ export async function getPostById(postId: string) {
       populatedUsers.map((u: any) => [u._id.toString(), u]),
     );
 
-    // 🍉 FIX: Re-attach user data to the target post itself
     const mainPostUserIdStr = targetPostRaw.userId.toString();
     targetPostRaw.userId =
       userMap.get(mainPostUserIdStr) || targetPostRaw.userId;
 
-    // Re-attach user data to each ancestor item
     const populatedAncestors = targetPostRaw.rawAncestors.map(
       (ancestor: any) => ({
         ...ancestor,
@@ -230,22 +257,32 @@ export async function getPostById(postId: string) {
       }),
     );
 
-    // 3. Sort ancestors chronologically
     const orderedAncestors = populatedAncestors.sort((a: any, b: any) => {
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
 
-    // 4. Standard serializer to handle plain object transformations
+    // Gather all post IDs present inside this detailed view to do a single aggregated Save call
+    let savedPostIdsStrings: string[] = [];
+    if (currentUserDoc) {
+      const allTargetPostIds = [
+        targetPostRaw._id,
+        ...commentsRaw.map((c) => c._id),
+        ...orderedAncestors.map((a) => a._id),
+      ];
+      const savedRecords = await Save.find({
+        userId: currentUserDoc._id,
+        postId: { $in: allTargetPostIds },
+      }).distinct("postId");
+      savedPostIdsStrings = savedRecords.map((id) => id.toString());
+    }
+
     const serializePost = (p: any) => ({
       ...p,
       _id: p._id.toString(),
       parentId: p.parentId ? p.parentId.toString() : null,
       userId:
         p.userId && typeof p.userId === "object"
-          ? {
-              ...p.userId,
-              _id: p.userId._id.toString(),
-            }
+          ? { ...p.userId, _id: p.userId._id.toString() }
           : p.userId,
       likes: p.likes?.map((id: any) => id.toString()) || [],
       reposts: p.reposts?.map((id: any) => id.toString()) || [],
@@ -255,9 +292,10 @@ export async function getPostById(postId: string) {
         p.createdAt instanceof Date
           ? p.createdAt.toISOString()
           : new Date(p.createdAt).toISOString(),
+      // Check against our current view collection bounds
+      isSaved: savedPostIdsStrings.includes(p._id.toString()),
     });
 
-    // Strip raw array off target before wrapping
     const { rawAncestors, ...cleanTargetPost } = targetPostRaw;
 
     const plainPost = serializePost(cleanTargetPost);
@@ -273,34 +311,22 @@ export async function getPostById(postId: string) {
     return { post: null, ancestors: [] };
   }
 }
+
 export async function createEcho(
   content: string,
   parentId: string | null = null,
 ) {
   const { userId: clerkUserId } = await auth();
-
-  if (!clerkUserId) {
-    return { success: false, error: "User not authenticated" };
-  }
+  if (!clerkUserId) return { success: false, error: "User not authenticated" };
 
   try {
     await connectDB();
-
-    // Ensure the User model is registered
     const EnsureUserSchema = User || mongoose.model("User");
 
-    {
-      /* 🍉 1. Find the local MongoDB user document using the Clerk ID */
-    }
     const mongoUser = await User.findOne({ clerkId: clerkUserId });
-
-    if (!mongoUser) {
+    if (!mongoUser)
       return { success: false, error: "User profile not found in database." };
-    }
 
-    {
-      /* 🍉 2. Pass the MongoDB _id (ObjectId) instead of the Clerk string */
-    }
     const newPost = await Post.create({
       userId: mongoUser._id,
       content,
@@ -308,11 +334,7 @@ export async function createEcho(
     });
 
     if (parentId) {
-      await Post.findByIdAndUpdate(parentId, {
-        $inc: { commentCount: 1 },
-      });
-
-      // Revalidate the individual dynamic post page if you have one (e.g., /echo/[id])
+      await Post.findByIdAndUpdate(parentId, { $inc: { commentCount: 1 } });
       revalidatePath(`/posts/${parentId}`);
     }
 
@@ -324,26 +346,16 @@ export async function createEcho(
 }
 
 export async function toggleLike(postId: string) {
-  // 1. Authenticate the user via Clerk
   const { userId: clerkUserId } = await auth();
-
-  if (!clerkUserId) {
-    return { success: false, error: "User not authenticated" };
-  }
+  if (!clerkUserId) return { success: false, error: "User not authenticated" };
 
   try {
     await connectDB();
-
-    // Ensure models are registered
     const EnsureUserSchema = User || mongoose.model("User");
     const EnsurePostSchema = Post || mongoose.model("Post");
 
-    // 2. Look up the local MongoDB user using the Clerk ID
     let mongoUser = await User.findOne({ clerkId: clerkUserId });
     if (!mongoUser) {
-      console.log(
-        `✨ Registering missing user profile for Clerk ID: ${clerkUserId}`,
-      );
       mongoUser = await User.create({
         clerkId: clerkUserId,
         username: `demo_user_${Math.random().toString(36).substring(2, 7)}`,
@@ -352,34 +364,19 @@ export async function toggleLike(postId: string) {
       });
     }
 
-    if (!mongoUser) {
-      return { success: false, error: "User profile not found in database." };
-    }
-
-    // 3. Find the post to check if the user has already liked it
     const post = await Post.findById(postId);
-    if (!post) {
-      return { success: false, error: "Post not found." };
-    }
+    if (!post) return { success: false, error: "Post not found." };
 
-    // Check if the user's MongoDB _id exists in the likes array
     const hasLiked = post.likes.includes(mongoUser._id);
-
     if (hasLiked) {
-      // 🍉 If already liked, remove them from the array ($pull)
-      await Post.findByIdAndUpdate(postId, {
-        $pull: { likes: mongoUser._id },
-      });
+      await Post.findByIdAndUpdate(postId, { $pull: { likes: mongoUser._id } });
     } else {
-      // 🍉 If not liked, atomically add them ($addToSet prevents duplicates)
       await Post.findByIdAndUpdate(postId, {
         $addToSet: { likes: mongoUser._id },
       });
     }
 
-    // 4. Revalidate the home path so the UI reflects the updated count immediately
     revalidatePath("/");
-
     return { success: true, hasLiked: !hasLiked };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -388,33 +385,19 @@ export async function toggleLike(postId: string) {
 
 export async function toggleSavePost(postId: string) {
   const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) return { success: false, error: "User not authenticated" };
 
-  if (!clerkUserId) {
-    return { success: false, error: "User not authenticated" };
-  }
-
+  await connectDB();
   const mongoUser = await User.findOne({ clerkId: clerkUserId });
-
-  if (!mongoUser) {
+  if (!mongoUser)
     return { success: false, error: "User profile not found in database." };
-  }
 
   try {
-    // 1. Get the logged-in user's ID directly from your session/auth framework
-    // const { userId: currentUserId } = await auth();
-    const currentUserId = mongoUser._id; // Replace with your actual auth extraction
-
-    if (!currentUserId) {
-      throw new Error("Unauthorized");
-    }
-
-    // 2. Query MongoDB
+    const currentUserId = mongoUser._id;
     const existingSave = await Save.findOne({ userId: currentUserId, postId });
 
     if (existingSave) {
       await Save.findByIdAndDelete(existingSave._id);
-
-      // Forces Next.js to clear its cache and update the UI instantly
       revalidatePath("/");
       return { saved: false, message: "Post unsaved" };
     }
@@ -432,24 +415,16 @@ export async function toggleSavePost(postId: string) {
 
 export async function getSavedPosts(page: number = 1) {
   const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) return { posts: [], error: "User not authenticated" };
 
-  if (!clerkUserId) {
-    return { success: false, error: "User not authenticated" };
-  }
-
+  await connectDB();
   const mongoUser = await User.findOne({ clerkId: clerkUserId });
-
-  if (!mongoUser) {
-    return { success: false, error: "User profile not found in database." };
-  }
+  if (!mongoUser)
+    return { posts: [], error: "User profile not found in database." };
 
   try {
-    const currentUserId = mongoUser._id; // Replace with your actual auth extraction
+    const currentUserId = mongoUser._id;
     const limit = 10;
-
-    if (!currentUserId) {
-      throw new Error("Unauthorized");
-    }
 
     const savedItems = await Save.find({ userId: currentUserId })
       .sort({ createdAt: -1 })
@@ -463,12 +438,12 @@ export async function getSavedPosts(page: number = 1) {
         },
       });
 
-    // Extract out just the actual populated post documents
     const posts = savedItems
       .filter((item) => item.postId !== null)
       .map((item) => {
-        // Convert Mongoose doc to plain JS object so Next.js components can read it safely
-        return JSON.parse(JSON.stringify(item.postId));
+        const itemObj = JSON.parse(JSON.stringify(item.postId));
+        // Everything returned in this query is inherently saved
+        return { ...itemObj, isSaved: true };
       });
 
     return { posts };
