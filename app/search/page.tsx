@@ -1,7 +1,10 @@
-import React from 'react';
+import React from "react";
+import SearchClient from "@/components/search-client";
+import { getSessionUser } from "@/lib/auth-user";
 
-const SearchPage = () => {
-    return <div className="w-full max-w-2xl mx-auto"> SearchPage</div>;
+const SearchPage = async () => {
+  const { userId } = await getSessionUser();
+  return <SearchClient currentClerkUserId={userId} />;
 };
 
 export default SearchPage;

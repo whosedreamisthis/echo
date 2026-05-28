@@ -88,6 +88,62 @@ export async function getPosts(
   return { posts: plainPosts, nextCursor };
 }
 
+export async function searchPosts(
+  query: string,
+  currentClerkUserId?: string | null,
+  cursor?: { createdAt: string; id: string } | null,
+) {
+  if (!query) return { posts: [], nextCursor: null };
+
+  await connectDB();
+  const EnsureUserSchema = User || mongoose.model("User");
+
+  let queryFilter: any = {
+    parentId: null,
+    content: { $regex: query, $options: "i" },
+  };
+
+  if (cursor) {
+    queryFilter.$or = [
+      { createdAt: { $lt: new Date(cursor.createdAt) } },
+      {
+        createdAt: new Date(cursor.createdAt),
+        _id: { $lt: new mongoose.Types.ObjectId(cursor.id) },
+      },
+    ];
+  }
+
+  if (currentClerkUserId) {
+    const currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
+    if (currentUserDoc) {
+      queryFilter = { ...queryFilter, userId: { $ne: currentUserDoc._id } };
+    }
+  }
+
+  const limitValue = 20;
+
+  const posts = await Post.find(queryFilter)
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limitValue + 1)
+    .populate("userId", "username profilePicture")
+    .lean();
+
+  const hasNextPage = posts.length > limitValue;
+  const slicedPosts = hasNextPage ? posts.slice(0, limitValue) : posts;
+  const plainPosts = getPlainPosts(slicedPosts);
+
+  let nextCursor = null;
+  if (hasNextPage && plainPosts.length > 0) {
+    const lastPost = plainPosts[plainPosts.length - 1];
+    nextCursor = {
+      createdAt: lastPost.createdAt,
+      id: lastPost._id,
+    };
+  }
+
+  return { posts: plainPosts, nextCursor };
+}
+
 export async function getPostsWithParent(parentId: string) {
   await connectDB();
 

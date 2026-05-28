@@ -4,20 +4,11 @@
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-export default function BackButton({
-  hasAncestors,
-}: {
-  hasAncestors: boolean;
-}) {
+export default function BackButton() {
   const router = useRouter();
 
   const handleBack = () => {
-    if (hasAncestors) {
-      // State sync will be handled automatically by AncestorTrail's useEffect!
-      router.back();
-    } else {
-      router.push("/");
-    }
+    router.back();
   };
 
   return (
