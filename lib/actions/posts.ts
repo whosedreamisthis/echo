@@ -37,6 +37,7 @@ function getPlainPosts(posts: PostType[]) {
   });
 }
 
+// Replace your existing getPosts function with this:
 export async function getPosts(
   currentClerkUserId?: string | null,
   cursor?: { createdAt: string; id: string } | null,
@@ -56,11 +57,12 @@ export async function getPosts(
     ];
   }
 
-  // Find current user profile
+  // ⚡ FIX: Find the local MongoDB user document first
   let currentUserDoc = null;
   if (currentClerkUserId) {
     currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
     if (currentUserDoc) {
+      // Exclude the user's own posts from the feed if that's your goal
       queryFilter = { ...queryFilter, userId: { $ne: currentUserDoc._id } };
     }
   }
@@ -76,17 +78,18 @@ export async function getPosts(
   const hasNextPage = posts.length > limitValue;
   const slicedPosts = hasNextPage ? posts.slice(0, limitValue) : posts;
 
-  // ⚡ FIX 2: Check database saves collection for the current user feed lookup
   let savedPostIdsStrings: string[] = [];
+
+  // ⚡ FIX: Query the Save collection using the MongoDB ObjectId (_id), NOT the clerkId string
   if (currentUserDoc) {
     const savedRecords = await Save.find({
-      userId: currentUserDoc._id,
+      userId: currentUserDoc._id, // ✅ Correctly matches the format in your DB
       postId: { $in: slicedPosts.map((p) => p._id) },
     }).distinct("postId");
+
     savedPostIdsStrings = savedRecords.map((id) => id.toString());
   }
 
-  // Inject isSaved flag into posts payload array
   const postsWithSaveState = slicedPosts.map((post) => ({
     ...post,
     isSaved: savedPostIdsStrings.includes(post._id.toString()),
@@ -106,6 +109,7 @@ export async function getPosts(
   return { posts: plainPosts, nextCursor };
 }
 
+// Replace your existing searchPosts function with this:
 export async function searchPosts(
   query: string,
   currentClerkUserId?: string | null,
@@ -131,6 +135,7 @@ export async function searchPosts(
     ];
   }
 
+  // ⚡ FIX: Apply the same MongoDB User doc lookup here
   let currentUserDoc = null;
   if (currentClerkUserId) {
     currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
@@ -150,13 +155,15 @@ export async function searchPosts(
   const hasNextPage = posts.length > limitValue;
   const slicedPosts = hasNextPage ? posts.slice(0, limitValue) : posts;
 
-  // ⚡ FIX 3: Apply the same check to Search results
   let savedPostIdsStrings: string[] = [];
+
+  // ⚡ FIX: Use the MongoDB _id here too
   if (currentUserDoc) {
     const savedRecords = await Save.find({
-      userId: currentUserDoc._id,
+      userId: currentUserDoc._id, // ✅ Correct format pointer
       postId: { $in: slicedPosts.map((p) => p._id) },
     }).distinct("postId");
+
     savedPostIdsStrings = savedRecords.map((id) => id.toString());
   }
 
@@ -276,6 +283,9 @@ export async function getPostById(postId: string) {
       savedPostIdsStrings = savedRecords.map((id) => id.toString());
     }
 
+    // ... (Keep the top half of getPostById exactly the same, down to where savedPostIdsStrings is computed)
+
+    // 1. Define your serialization helper (Ensure it handles reading the pre-mapped isSaved flag)
     const serializePost = (p: any) => ({
       ...p,
       _id: p._id.toString(),
@@ -292,15 +302,33 @@ export async function getPostById(postId: string) {
         p.createdAt instanceof Date
           ? p.createdAt.toISOString()
           : new Date(p.createdAt).toISOString(),
-      // Check against our current view collection bounds
-      isSaved: savedPostIdsStrings.includes(p._id.toString()),
+      // ⚡ Keeps whatever was mapped, or falls back to checking the aggregation array
+      isSaved:
+        p.isSaved !== undefined
+          ? p.isSaved
+          : savedPostIdsStrings.includes(p._id.toString()),
     });
 
+    // 2. Strip raw array off the main target post
     const { rawAncestors, ...cleanTargetPost } = targetPostRaw;
 
+    // ⚡ FIX: Map over the raw comments array and explicitly inject the true/false save state
+    // BEFORE passing them to serializePost!
+    const commentsWithSaveState = commentsRaw.map((comment) => ({
+      ...comment,
+      isSaved: savedPostIdsStrings.includes(comment._id.toString()),
+    }));
+
+    // ⚡ FIX: Apply the exact same logic to your ancestors array so they don't break either!
+    const ancestorsWithSaveState = orderedAncestors.map((ancestor) => ({
+      ...ancestor,
+      isSaved: savedPostIdsStrings.includes(ancestor._id.toString()),
+    }));
+
+    // 3. Serialize everything cleanly for your Client Components
     const plainPost = serializePost(cleanTargetPost);
-    const plainComments = commentsRaw.map(serializePost);
-    const plainAncestors = orderedAncestors.map(serializePost);
+    const plainComments = commentsWithSaveState.map(serializePost);
+    const plainAncestors = ancestorsWithSaveState.map(serializePost);
 
     return {
       post: { ...plainPost, comments: plainComments },

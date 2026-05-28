@@ -1,6 +1,6 @@
 import React from "react";
 import { getSessionUser } from "@/lib/auth-user";
-import { getPostById, getPostsWithParent } from "@/lib/actions/posts";
+import { getPostById } from "@/lib/actions/posts"; // ⚡ Removed getPostsWithParent import
 import Image from "next/image";
 import { DEFAULT_AVATAR } from "@/lib/constants";
 import { getRelativeTime } from "@/lib/utils";
@@ -21,21 +21,26 @@ const PostPage = async ({
   ]);
   const { postId } = resolvedParams;
 
+  // ⚡ 1. Fetch the post, ancestors, and comments all together via getPostById
   const { post, ancestors } = (await getPostById(postId)) as {
-    post: PostType | null;
+    post: (PostType & { comments: PostType[] }) | null;
     ancestors: PostType[];
   };
-  const { posts: comments } = await getPostsWithParent(postId);
+
+  // ⚡ 2. REMOVED the redundant getPostsWithParent call that was breaking your states!
 
   if (!post) {
     return <div>Post not found</div>;
   }
 
+  // ⚡ 3. Safely fall back to an empty array if the post lacks comments
+  const comments = post.comments || [];
+
   return (
     <div>
       <BackButton />
       <div className="w-full flex flex-col justify-start items-start">
-        <div className="bg-white  w-full max-w-xl border border-gray-200 sm:rounded-2xl  mb-5 overflow-hidden py-5">
+        <div className="bg-white w-full max-w-xl border border-gray-200 sm:rounded-2xl mb-5 overflow-hidden py-5">
           <AncestorTrail ancestors={ancestors} />
 
           <div
@@ -63,6 +68,7 @@ const PostPage = async ({
                   className={`${index === comments.length - 1 ? "" : "pb-4 border-b "}`}
                 >
                   <div className="px-5">
+                    {/* ⚡ 4. This will now correctly carry the checked isSaved state fields! */}
                     <PostCard post={comment} />
                   </div>
                 </div>

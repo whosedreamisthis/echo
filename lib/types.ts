@@ -27,4 +27,5 @@ export interface PostType {
   shares: string[]; // Array of User IDs who shared
   commentCount: number;
   comments?: PostType[];
+  isSaved?: boolean;
 }

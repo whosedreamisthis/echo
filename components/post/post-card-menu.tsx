@@ -14,7 +14,7 @@ import { toggleSavePost } from "@/lib/actions/posts";
 
 interface PostCardMenuProps {
   postId: string;
-  initialIsSaved: boolean; // ⚡ Accept the status from the parent post/feed context
+  initialIsSaved: boolean | undefined; // ⚡ Accept the status from the parent post/feed context
 }
 
 const PostCardMenu = ({ postId, initialIsSaved }: PostCardMenuProps) => {
