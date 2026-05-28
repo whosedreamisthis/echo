@@ -1,6 +1,6 @@
 import React from "react";
 import { getSessionUser } from "@/lib/auth-user";
-import { getPostById } from "@/lib/actions/posts"; // ⚡ Removed getPostsWithParent import
+import { getPostById } from "../../actions/threads"; // ⚡ Removed getPostsWithParent import
 import Image from "next/image";
 import { DEFAULT_AVATAR } from "@/lib/constants";
 import { getRelativeTime } from "@/lib/utils";

@@ -1,5 +1,5 @@
 import React from "react";
-import { getSavedPosts } from "@/lib/actions/posts";
+import { getSavedPosts } from "../actions/interactions";
 import PostCard from "@/components/post/post-card";
 import { Bookmark } from "lucide-react";
 

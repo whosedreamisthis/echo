@@ -2,7 +2,7 @@
 import React, { useOptimistic, useTransition } from "react";
 import { Heart, MessageCircle, SendHorizontal, RefreshCcw } from "lucide-react";
 import { PostType } from "@/lib/types";
-import { toggleLike } from "@/lib/actions/posts";
+import { toggleLike } from "../../app/actions/interactions";
 
 const LikeButton = ({
   post,

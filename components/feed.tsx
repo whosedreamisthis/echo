@@ -3,7 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { PostType } from "@/lib/types";
 import PostCard from "./post/post-card";
-import { getPosts } from "@/lib/actions/posts"; // 🍉 Import your Server Action
+import { getPosts } from "../app/actions/threads"; // 🍉 Import target actions
+
+import { getUserProfileFeed } from "../app/actions/profile-feeds";
 
 interface CursorType {
   createdAt: string;
@@ -14,64 +16,93 @@ interface FeedProps {
   initialPosts: PostType[];
   initialCursor: CursorType | null;
   currentClerkUserId?: string | null;
+  // 👇 New Context Fields
+  feedType?: "home" | "threads" | "replies" | "reposts";
+  profileUserId?: string | null; // The ID of the person whose profile we are looking at
 }
 
 const Feed = ({
   initialPosts,
   initialCursor,
   currentClerkUserId,
+  feedType = "home", // Defaults to main home feed
+  profileUserId,
 }: FeedProps) => {
   const [posts, setPosts] = useState<PostType[]>(initialPosts);
   const [cursor, setCursor] = useState<CursorType | null>(initialCursor);
   const [isFetching, setIsFetching] = useState(false);
 
-  // Reference for our intersection observer anchor
   const observerTarget = useRef<HTMLDivElement>(null);
 
+  // 🔄 1. Reset feed when user toggles tabs (Crucial for Profile page state updates)
   useEffect(() => {
-    // If there is no next cursor, don't set up the observer
+    setPosts(initialPosts);
+    setCursor(initialCursor);
+  }, [initialPosts, initialCursor, feedType]);
+
+  useEffect(() => {
     if (!cursor) return;
 
     const observer = new IntersectionObserver(
       async (entries) => {
-        // If the bottom element is visible and we aren't already fetching...
         if (entries[0].isIntersecting && !isFetching) {
           setIsFetching(true);
 
           try {
-            // Call the Server Action directly from the client side!
-            const response = await getPosts(currentClerkUserId, cursor);
+            let response;
+
+            // 🎯 2. Dynamically execute the correct database query based on the active feed type
+            switch (feedType) {
+              case "threads":
+                response = await getUserProfileFeed(
+                  profileUserId!,
+                  cursor,
+                  "posts",
+                );
+                break;
+              case "replies":
+                response = await getUserProfileFeed(
+                  profileUserId!,
+                  cursor,
+                  "replies",
+                );
+                break;
+              case "reposts":
+                response = await getUserProfileFeed(
+                  profileUserId!,
+                  cursor,
+                  "reposts",
+                );
+                break;
+              case "home":
+              default:
+                response = await getPosts(currentClerkUserId, cursor);
+                break;
+            }
 
             if (response && response.posts.length > 0) {
-              // Append the new posts to our existing array
               setPosts((prevPosts) => [...prevPosts, ...response.posts]);
-              // Update the cursor pointer to the next page boundary
               setCursor(response.nextCursor);
             } else {
-              setCursor(null); // No more posts left to fetch
+              setCursor(null);
             }
           } catch (error) {
-            console.error("Failed to load more posts:", error);
+            console.error(`Failed to load more items for ${feedType}:`, error);
           } finally {
             setIsFetching(false);
           }
         }
       },
-      { threshold: 1.0 }, // Trigger immediately when the target element is 100% visible
+      { threshold: 0.5 }, // 💡 UI Pro-tip: 0.5 threshold triggers slightly earlier for a smoother scroll experience
     );
 
     const currentTarget = observerTarget.current;
-    if (currentTarget) {
-      observer.observe(currentTarget);
-    }
+    if (currentTarget) observer.observe(currentTarget);
 
-    // Clean up observer listeners when dependencies change or component unmounts
     return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
-      }
+      if (currentTarget) observer.unobserve(currentTarget);
     };
-  }, [cursor, isFetching, currentClerkUserId]);
+  }, [cursor, isFetching, currentClerkUserId, feedType, profileUserId]);
 
   return (
     <>
@@ -81,12 +112,12 @@ const Feed = ({
           className={`pt-5 pb-2 ${index !== posts.length - 1 ? "border-b" : ""}`}
         >
           <div className="px-5">
-            <PostCard post={post} />
+            {/* If it's a repost view, you can optionally pass an indicator prop here */}
+            <PostCard post={post} showRepostHeader={feedType === "reposts"} />
           </div>
         </div>
       ))}
 
-      {/* 🍉 Infinite Scroll Anchor Target */}
       {cursor && (
         <div
           ref={observerTarget}

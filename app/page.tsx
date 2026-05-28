@@ -1,7 +1,7 @@
 // app/page.tsx
 
 import DemoButton from "@/components/demo-button";
-import { getPosts } from "@/lib/actions/posts";
+import { getPosts } from "./actions/threads";
 import Feed from "@/components/feed";
 import NewThread from "@/components/new-thread";
 import AuthProvider from "@/components/auth-provider";
@@ -35,6 +35,8 @@ export default async function Home() {
               initialPosts={posts}
               initialCursor={nextCursor}
               currentClerkUserId={userId}
+              profileUserId={userId}
+              feedType="home"
             />
           </AuthProvider>
         </div>

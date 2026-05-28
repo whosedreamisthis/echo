@@ -9,6 +9,9 @@ interface SessionUser {
   mongoUserId: string;
   mongoProfileImage: string;
   mongoUsername: string;
+  displayName: string;
+  bio: string;
+  website: string;
 }
 
 export async function getSessionUser(): Promise<SessionUser> {
@@ -23,6 +26,9 @@ export async function getSessionUser(): Promise<SessionUser> {
     mongoUserId: "",
     mongoProfileImage: defaultImage,
     mongoUsername: "",
+    displayName: "",
+    bio: "",
+    website: "",
   };
 
   if (!userId) {
@@ -36,7 +42,7 @@ export async function getSessionUser(): Promise<SessionUser> {
 
     // Fetch both the ID and user picture in ONE single query
     const dbUser = await User.findOne({ clerkId: userId }).select(
-      "_id profilePicture username",
+      "_id profilePicture username name bio website",
     );
 
     if (dbUser) {
@@ -46,6 +52,9 @@ export async function getSessionUser(): Promise<SessionUser> {
         result.mongoProfileImage = dbUser.profilePicture;
       }
       result.mongoUsername = dbUser.username;
+      result.displayName = dbUser.name;
+      result.bio = dbUser.bio;
+      result.website = dbUser.website;
     }
   } catch (error) {
     console.error("Error fetching session user from MongoDB:", error);

@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { toggleSavePost } from "@/lib/actions/posts";
+import { toggleSavePost } from "../../app/actions/interactions";
 
 interface PostCardMenuProps {
   postId: string;

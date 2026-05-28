@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { PostType } from "@/lib/types";
 import PostCard from "./post/post-card";
-import { searchPosts } from "@/lib/actions/posts";
+import { searchPosts } from "../app/actions/threads";
 
 interface CursorType {
   createdAt: string;

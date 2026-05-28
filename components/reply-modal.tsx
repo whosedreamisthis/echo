@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom"; // ⚡ Imported to fix the stacking context bug
 import { X, Paperclip, BarChart2, Smile } from "lucide-react";
-import { createEcho } from "@/lib/actions/posts";
+import { createEcho } from "../app/actions/threads";
 import Image from "next/image";
 import TextareaAutosize from "react-textarea-autosize";
 import { toast } from "sonner";

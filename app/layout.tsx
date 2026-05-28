@@ -37,10 +37,8 @@ export default async function RootLayout({
     );
     if (dbUser?.profilePicture) {
       databaseProfileImage = dbUser.profilePicture;
-      console.log(databaseProfileImage);
     }
-    console.log("username", dbUser?.username);
-    console.log("userId", userId);
+
     username = dbUser?.username || "";
   }
   return (
