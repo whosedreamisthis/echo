@@ -46,7 +46,7 @@ const SearchClient = ({ currentClerkUserId }: SearchClientProps) => {
 
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col items-center">
-      <div className="w-full sticky top-0 bg-white/80 pt-5 pb-3 px-5 z-50 border-b border-gray-100">
+      <div className="w-full sticky top-0 bg-white/80 pt-5 pb-3 px-5 z-30 border-b border-gray-100">
         <h1 className="text-2xl font-bold mb-4">Search</h1>
         <div className="relative w-full">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -62,7 +62,7 @@ const SearchClient = ({ currentClerkUserId }: SearchClientProps) => {
         </div>
       </div>
 
-      <div className="w-full sm:rounded-2xl mt-4 mb-5 overflow-hidden border border-gray-200 bg-white min-h-[50vh] relative z-0">
+      <div className="w-full sm:rounded-2xl mt-4 mb-5 overflow-hidden border border-gray-200 bg-white min-h-[50vh] ">
         <SearchFeed
           query={debouncedTerm}
           currentClerkUserId={currentClerkUserId}

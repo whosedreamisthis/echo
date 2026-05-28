@@ -2,8 +2,8 @@
 "use server";
 
 import { createClerkClient } from "@clerk/nextjs/server";
-import connectDB from "lib/db";
-import User from "models/User";
+import connectDB from "@/lib/db";
+import User from "@/models/User";
 
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
