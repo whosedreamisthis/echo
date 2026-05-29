@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Home, Search, PlusSquare, Bookmark, User } from "lucide-react";
 import { CreateEchoModal } from "@/components/create-echo-modal";
 import Link from "next/link";
-import Logo from "@/components/logo"; // Your modal component
+import Logo from "@/components/nav/logo"; // Your modal component
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
@@ -96,7 +96,7 @@ export default function Navigation({
             return (
               <Link
                 key={item.label}
-                href={item.href ?? "/"}
+                href={item.href ?? "/public"}
                 className={`flex items-center gap-4 ${active === item.id ? "text-primary" : "text-muted-foreground"} hover:text-foreground`}
                 onClick={() => setActive(item.id)}
               >

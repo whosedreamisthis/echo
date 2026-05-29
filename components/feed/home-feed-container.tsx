@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import FeedTabs from "@/components/feed-tabs";
-import Feed from "@/components/feed";
+import FeedTabs from "@/components/feed/feed-tabs";
+import Feed from "@/components/feed/feed";
 import AuthProvider from "@/components/auth-provider";
 import { getPosts } from "@/app/actions/threads";
 

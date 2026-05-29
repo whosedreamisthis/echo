@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import connectDB from "../lib/db";
+import connectDB from "@/lib/db";
 import User from "@/models/User";
 import Post from "@/models/Post";
 import Repost from "@/models/Repost";

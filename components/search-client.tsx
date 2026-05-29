@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Search as SearchIcon } from "lucide-react";
-import SearchFeed from "@/components/search-feed";
+import SearchFeed from "./feed/search-feed";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 interface SearchClientProps {

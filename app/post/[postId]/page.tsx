@@ -1,13 +1,13 @@
 import React from "react";
 import { getSessionUser } from "@/lib/auth-user";
-import { getPostById } from "../../actions/threads"; // ⚡ Removed getPostsWithParent import
+import { getPostById } from "@/app/actions/threads"; // ⚡ Removed getPostsWithParent import
 import Image from "next/image";
 import { DEFAULT_AVATAR } from "@/lib/constants";
 import { getRelativeTime } from "@/lib/utils";
 import PostCardActions from "@/components/post/post-card-actions";
 import PostCard from "@/components/post/post-card";
 import { PostType } from "@/lib/types";
-import BackButton from "@/components/back-button";
+import BackButton from "../../../components/nav/back-button";
 import AncestorTrail from "@/components/post/ancestor-trail";
 
 const PostPage = async ({

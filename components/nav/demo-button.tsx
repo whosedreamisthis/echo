@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useAuth, useClerk } from "@clerk/nextjs";
-import { createEphemeralDemoUser } from "../app/actions/demo";
+import { createEphemeralDemoUser } from "../../app/actions/demo";
 
 export default function DemoButton() {
   const { isLoaded } = useAuth();

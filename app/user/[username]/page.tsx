@@ -2,7 +2,7 @@ import React from "react";
 import { getSessionUser } from "@/lib/auth-user";
 import Image from "next/image";
 import ProfileTabs from "@/components/profile/profile-tabs";
-import Feed from "@/components/feed";
+import Feed from "../../../components/feed/feed";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
 import { notFound } from "next/navigation";

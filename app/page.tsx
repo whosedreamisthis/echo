@@ -1,12 +1,12 @@
 // app/page.tsx
 
-import DemoButton from "@/components/demo-button";
-import { getPosts } from "./actions/threads";
+import DemoButton from "@/components/nav/demo-button";
+import { getPosts } from "@/app/actions/threads";
 import NewThread from "@/components/new-thread";
 import { getSessionUser } from "@/lib/auth-user";
 import { SignOutButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import HomeFeedContainer from "@/components/home-feed-container";
+import HomeFeedContainer from "@/components/feed/home-feed-container";
 
 export default async function Home() {
   const { userId, mongoUserId, mongoProfileImage } = await getSessionUser();

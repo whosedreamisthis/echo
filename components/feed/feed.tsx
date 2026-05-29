@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { PostType } from "@/lib/types";
-import PostCard from "./post/post-card";
-import { getPosts } from "../app/actions/threads";
+import PostCard from "@/components/post/post-card";
+import { getPosts } from "@/app/actions/threads";
 
-import { getUserProfileFeed } from "../app/actions/profile-feeds";
+import { getUserProfileFeed } from "@/app/actions/profile-feeds";
 
 interface CursorType {
   createdAt: string;
