@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Search as SearchIcon } from "lucide-react";
 import SearchFeed from "./feed/search-feed";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
@@ -18,9 +18,26 @@ const SearchClient = ({ currentClerkUserId }: SearchClientProps) => {
   const [searchTerm, setSearchTerm] = useState(initialQuery);
   const [debouncedTerm, setDebouncedTerm] = useState(initialQuery);
 
-  // Debounce the searchTerm and update the URL and debouncedTerm
+  // Track if the component is mounted to prevent execution during page unmounts
+  const isMounted = useRef(true);
+
   useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false; // 👈 Set to false instantly when user clicks away
+    };
+  }, []);
+
+  // Debounce the input state changes safely
+  useEffect(() => {
+    // If the input matches our current state, do absolutely nothing
+    if (searchTerm === debouncedTerm) return;
+
     const timer = setTimeout(() => {
+      // ⚡ Safety Guard: If the user has clicked away and unmounted the component,
+      // kill the execution thread immediately so it doesn't hijack the navigation!
+      if (!isMounted.current || pathname !== "/search") return;
+
       setDebouncedTerm(searchTerm);
 
       const params = new URLSearchParams(searchParams.toString());
@@ -30,19 +47,15 @@ const SearchClient = ({ currentClerkUserId }: SearchClientProps) => {
         params.delete("q");
       }
 
-      // Update URL without adding to history stack for every keystroke if possible,
-      // but standard router.push/replace is fine here since we want back button to work.
-      // However, we only want to update URL with the debounced term to avoid history bloat.
-      const newUrl = `${pathname}?${params.toString()}`;
-      if (params.toString()) {
-        router.replace(newUrl);
-      } else {
-        router.replace(pathname);
-      }
-    }, 500); // 500ms debounce
+      const newUrl = params.toString()
+        ? `${pathname}?${params.toString()}`
+        : pathname;
+      router.replace(newUrl, { scroll: false });
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, pathname, router, searchParams]);
+    // ⚡ Keep dependencies limited strictly to string input mutations
+  }, [searchTerm, debouncedTerm, pathname, router, searchParams]);
 
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col items-center">

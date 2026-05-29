@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Home, Search, PlusSquare, Bookmark, User } from "lucide-react";
 import { CreateEchoModal } from "@/components/create-echo-modal";
 import Logo from "@/components/nav/logo";
-import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link"; // ⚡ Back to native Next.js link prefetching
+import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { id: "home", label: "Home", href: "/", icon: Home, type: "link" },
@@ -40,9 +41,8 @@ export default function Navigation({
 }) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
 
-  // ⚡ FIX: Accurate segment isolation
+  // Accurately parse URL segments
   const currentSegments = pathname.split("/").filter(Boolean);
   const currentBaseSegment = currentSegments[0] || "";
 
@@ -56,10 +56,8 @@ export default function Navigation({
     currentBaseSegment.startsWith("@") ||
     currentBaseSegment.startsWith("%40")
   ) {
-    // If the path starts with @username, map it strictly to the profile tab!
     activeId = "profile";
   } else if (pathname !== "/") {
-    // Captures fallback pages or deep routes while keeping pure "/" dedicated to home
     activeId = currentBaseSegment;
   }
 
@@ -79,14 +77,17 @@ export default function Navigation({
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = activeId === item.id;
+          const activeStyles = isActive
+            ? "text-primary font-semibold"
+            : "text-muted-foreground";
 
-          // 1. Action Modals
+          // 1. Action Modals (Modals must remain buttons)
           if (item.type === "button") {
             return (
               <button
                 key={item.label}
                 onClick={() => setIsCreateOpen(true)}
-                className={`cursor-pointer flex items-center gap-4 ${isActive ? "text-primary font-semibold" : "text-muted-foreground"} hover:text-foreground`}
+                className={`cursor-pointer flex items-center gap-4 ${activeStyles} hover:text-foreground border-none bg-transparent p-0 outline-none`}
               >
                 <Icon className="h-6 w-6" />
                 <span className="hidden md:inline">{item.label}</span>
@@ -94,43 +95,20 @@ export default function Navigation({
             );
           }
 
-          // 2. Profile Destination Router Links
-          if (item.id === "profile") {
-            const profileHref = `/@${username}`;
-            return (
-              <button
-                key={item.label}
-                onClick={() => {
-                  router.push(profileHref);
-                }}
-                className={`cursor-pointer flex items-center gap-4 w-full justify-start ${
-                  isActive
-                    ? "text-primary font-semibold"
-                    : "text-muted-foreground"
-                } hover:text-foreground`}
-              >
-                <Icon className="h-6 w-6" />
-                <span className="hidden md:inline">{item.label}</span>
-              </button>
-            );
-          }
+          // Determine the correct destination target cleanly ahead of rendering
+          const targetHref =
+            item.id === "profile" ? `/@${username}` : (item.href ?? "/");
 
-          // 3. Regular Links (Home, Search, Saved)
+          // 2. Real Semantic Navigation Links (Home, Search, Saved, Profile)
           return (
-            <button
+            <Link
               key={item.label}
-              onClick={() => {
-                router.push(item.href ?? "/");
-              }}
-              className={`cursor-pointer  flex items-center gap-4 w-full justify-start ${
-                isActive
-                  ? "text-primary font-semibold"
-                  : "text-muted-foreground"
-              } hover:text-foreground`}
+              href={targetHref}
+              className={`cursor-pointer flex items-center gap-4 w-full justify-start ${activeStyles} hover:text-foreground`}
             >
               <Icon className="h-6 w-6" />
               <span className="hidden md:inline">{item.label}</span>
-            </button>
+            </Link>
           );
         })}
 
