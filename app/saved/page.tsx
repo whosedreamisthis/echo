@@ -29,7 +29,7 @@ export default async function SavedPostsPage({ searchParams }: SavedPageProps) {
       {/* Page Header Area */}
       <div className="w-full sticky top-0 bg-white/95 backdrop-blur-md pt-6 pb-4 px-5 border-b border-gray-100 z-30 flex items-center gap-2">
         <Bookmark className="h-6 w-6 text-black fill-current" />
-        <h1 className="text-xl font-bold tracking-tight">Saved Threads</h1>
+        <h1 className="text-xl font-bold tracking-tight">Saved Echos</h1>
       </div>
 
       {/* Empty State vs Feed Content Layout Render */}
@@ -39,11 +39,11 @@ export default async function SavedPostsPage({ searchParams }: SavedPageProps) {
             <Bookmark className="h-5 w-5 text-gray-400" />
           </div>
           <h3 className="text-sm font-semibold text-gray-900">
-            No bookmarked threads
+            No bookmarked echos.
           </h3>
           <p className="text-xs text-gray-500 mt-1 max-w-xs">
-            Threads you save from your main feed will appear here so you can
-            read them later.
+            Echos you save from your main feed will appear here so you can read
+            them later.
           </p>
         </div>
       ) : (

@@ -3,26 +3,26 @@
 
 import { useState } from "react";
 
-type TabType = "threads" | "replies" | "media" | "reposts";
+type TabType = "echos" | "replies" | "media" | "reposts";
 
 interface ProfileTabsProps {
   username: string;
   // You can pass the actual pre-fetched feed components down as props
-  threadsFeed: React.ReactNode;
+  echosFeed: React.ReactNode;
   repliesFeed: React.ReactNode;
   repostsFeed: React.ReactNode;
 }
 
 export default function ProfileTabs({
   username,
-  threadsFeed,
+  echosFeed,
   repliesFeed,
   repostsFeed,
 }: ProfileTabsProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("threads");
+  const [activeTab, setActiveTab] = useState<TabType>("echos");
 
   const tabs: { id: TabType; label: string }[] = [
-    { id: "threads", label: "Threads" },
+    { id: "echos", label: "Echos" },
     { id: "replies", label: "Replies" },
     { id: "media", label: "Media" },
     { id: "reposts", label: "Reposts" },
@@ -53,8 +53,8 @@ export default function ProfileTabs({
 
       {/* Tab Panels Content */}
       <div className="w-full mt-4">
-        {activeTab === "threads" && (
-          <div className="animate-fadeIn">{threadsFeed}</div>
+        {activeTab === "echos" && (
+          <div className="animate-fadeIn">{echosFeed}</div>
         )}
 
         {activeTab === "replies" && (

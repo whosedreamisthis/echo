@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { X, Paperclip, BarChart2, Smile } from "lucide-react";
-import { createEcho } from "@/app/actions/threads";
+import { createEcho } from "../app/actions/echos";
 import Image from "next/image";
 import TextareaAutosize from "react-textarea-autosize";
 import { toast } from "sonner";
@@ -154,7 +154,6 @@ export function CreateEchoModal({
             </div>
 
             <div className="flex-1">
-              {/* Media & Input Attachments (Threads-style aesthetic) */}
               <div
                 className="relative flex items-center gap-4 text-muted-foreground pl-1 mt-1"
                 ref={pickerRef}

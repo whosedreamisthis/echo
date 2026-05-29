@@ -14,10 +14,6 @@ import mongoose from "mongoose";
 // Add Follow import to the top of your existing file
 import Follow from "@/models/Follow";
 
-// app/actions/threads.ts
-
-// app/actions/threads.ts
-
 export async function getPosts(
   currentClerkUserId?: string | null,
   cursor?: { createdAt: string; id: string } | null,

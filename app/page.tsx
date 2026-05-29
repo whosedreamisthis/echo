@@ -1,7 +1,7 @@
 // app/page.tsx
 
 import DemoButton from "@/components/nav/demo-button";
-import { getPosts } from "@/app/actions/threads";
+import { getPosts } from "./actions/echos";
 import NewThread from "@/components/new-thread";
 import { getSessionUser } from "@/lib/auth-user";
 import { SignOutButton } from "@clerk/nextjs";

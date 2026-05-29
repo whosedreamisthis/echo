@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import FeedTabs from "@/components/feed/feed-tabs";
 import Feed from "@/components/feed/feed";
 import AuthProvider from "@/components/auth-provider";
-import { getPosts } from "@/app/actions/threads";
+import { getPosts } from "../../app/actions/echos";
 
 interface HomeFeedContainerProps {
   initialPosts: any[];

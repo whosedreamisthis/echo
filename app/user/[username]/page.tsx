@@ -51,7 +51,7 @@ const UserPage = async ({
     loggedInMongoUser._id.toString() === targetUser._id.toString();
 
   // Fetch separate datasets using the single consolidated action
-  const { posts: initialThreads, nextCursor: threadsCursor } =
+  const { posts: initialEchos, nextCursor: echosCursor } =
     await getUserProfileFeed(targetUser._id.toString(), null, "posts");
 
   const { posts: initialReposts, nextCursor: repostsCursor } =
@@ -105,13 +105,13 @@ const UserPage = async ({
 
       <ProfileTabs
         username={targetUser.username}
-        threadsFeed={
+        echosFeed={
           <Feed
-            initialPosts={initialThreads}
-            initialCursor={threadsCursor}
+            initialPosts={initialEchos}
+            initialCursor={echosCursor}
             currentClerkUserId={currentClerkUserId}
             profileUserId={targetUser._id.toString()}
-            feedType="threads"
+            feedType="echos"
           />
         }
         repliesFeed={

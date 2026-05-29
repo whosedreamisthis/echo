@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { PostType } from "@/lib/types";
 import PostCard from "@/components/post/post-card";
-import { getPosts } from "@/app/actions/threads";
+import { getPosts } from "@/app/actions/echos";
 
 import { getUserProfileFeed } from "@/app/actions/profile-feeds";
 
@@ -17,13 +17,7 @@ interface FeedProps {
   initialCursor: CursorType | null;
   currentClerkUserId?: string | null;
   // ⚡ FIX: Add "global" and "following" to your union type here
-  feedType?:
-    | "home"
-    | "threads"
-    | "replies"
-    | "reposts"
-    | "global"
-    | "following";
+  feedType?: "home" | "echos" | "replies" | "reposts" | "global" | "following";
   profileUserId?: string | null;
 }
 
@@ -57,7 +51,7 @@ const Feed = ({
             let response;
 
             switch (feedType) {
-              case "threads":
+              case "echos":
                 response = await getUserProfileFeed(
                   profileUserId!,
                   cursor,
@@ -119,14 +113,14 @@ const Feed = ({
 
   const renderEmptyState = () => {
     switch (feedType) {
-      case "threads":
-        return "This user hasn't posted any threads yet.";
+      case "echos":
+        return "This user hasn't posted any echos yet.";
       case "replies":
-        return "This user hasn't replied to any threads yet.";
+        return "This user hasn't replied to any echos yet.";
       case "reposts":
         return "This user hasn't reposted anything yet.";
       case "following":
-        return "Threads from people you follow will show up here. Try following some users!";
+        return "Echos from people you follow will show up here. Try following some users!";
       case "global":
       case "home":
       default:
