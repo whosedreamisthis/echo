@@ -79,7 +79,7 @@ async function seedDatabase() {
 
     console.log("🤝 Generating random follower networks...");
     for (const currentUser of seedUsers) {
-      const targetFollowCount = Math.floor(Math.random() * 5) + 2; // Reduced follow count for testing
+      const targetFollowCount = Math.floor(Math.random() * 5) + 2;
       const potentialFollows = [...seedUsers]
         .filter((u) => u._id.toString() !== currentUser._id.toString())
         .sort(() => 0.5 - Math.random())
@@ -99,7 +99,8 @@ async function seedDatabase() {
     console.log(
       "📝 Generating community posts, likes, reposts, shares, and comments...",
     );
-    const TOTAL_POSTS = 50; // Dropped to 50 for a cleaner test environment
+    const TOTAL_POSTS = 50;
+    const createdPrimaryPosts: any[] = []; // 👈 Track posts to target during the extra repost phase
 
     for (let i = 0; i < TOTAL_POSTS; i++) {
       const postAuthor =
@@ -116,7 +117,6 @@ async function seedDatabase() {
       const likes = getRandomUsersSublist(8).map((u) => u._id);
       const shares = getRandomUsersSublist(4).map((u) => u._id);
 
-      // 🌟 REPOST REDUCTION FIX: Only 0, 1, or 2 users will repost any given primary post
       const usersWhoReposted = getRandomUsersSublist(3);
 
       const post = await Post.create({
@@ -124,12 +124,15 @@ async function seedDatabase() {
         content,
         likes,
         shares,
+        reposts: usersWhoReposted.map((u) => u._id),
         repostCount: usersWhoReposted.length,
         commentCount: 0,
         createdAt: new Date(
           Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 7,
         ),
       });
+
+      createdPrimaryPosts.push(post);
 
       for (const user of usersWhoReposted) {
         await Repost.create({
@@ -150,7 +153,6 @@ async function seedDatabase() {
             Math.floor(Math.random() * COMMENT_TEMPLATES.length)
           ];
 
-        // Comments themselves have 0 repost entries now to eliminate excess noise
         await Post.create({
           userId: commentAuthor._id,
           parentId: post._id,
@@ -170,8 +172,49 @@ async function seedDatabase() {
       }
     }
 
+    // ⚡ ADDED: Generate exactly 30 explicit extra reposts to fill out timelines
     console.log(
-      `\n✅ Success! Database reseeded with highly optimized data sizes.`,
+      "🔄 Generating 30 extra standalone repost entries across random posts...",
+    );
+    const EXTRA_REPOSTS_COUNT = 30;
+    let addedReposts = 0;
+
+    while (addedReposts < EXTRA_REPOSTS_COUNT) {
+      // Pick a random post and a random user
+      const targetPost =
+        createdPrimaryPosts[
+          Math.floor(Math.random() * createdPrimaryPosts.length)
+        ];
+      const reposter = seedUsers[Math.floor(Math.random() * seedUsers.length)];
+
+      // Ensure the author isn't reposting their own post to keep data clean
+      if (targetPost.userId.toString() === reposter._id.toString()) continue;
+
+      try {
+        // Attempt to create a unique repost entry (fails gracefully if compound index triggers)
+        await Repost.create({
+          userId: reposter._id,
+          postId: targetPost._id,
+          createdAt: new Date(
+            targetPost.createdAt.getTime() +
+              Math.random() * 1000 * 60 * 60 * 24 * 3,
+          ),
+        });
+
+        // Increment counter on parent object model safely
+        await Post.findByIdAndUpdate(targetPost._id, {
+          $inc: { repostCount: 1 },
+          $addToSet: { reposts: reposter._id },
+        });
+        addedReposts++;
+      } catch (err) {
+        // Compound unique index caught a duplicate pair selection, pass and retry loop
+        continue;
+      }
+    }
+
+    console.log(
+      `\n✅ Success! Database reseeded with ${TOTAL_POSTS} posts and ${addedReposts + 30} total reposts.`,
     );
   } catch (error) {
     console.error("❌ Seeding failed:", error);

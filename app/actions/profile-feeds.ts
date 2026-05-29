@@ -49,6 +49,7 @@ export async function getUserProfileFeed(
       })
       .populate("userId", "name")
       .lean();
+    console.log("repostEntries", repostEntries);
 
     hasNextPage = repostEntries.length > limitValue;
     const slicedEntries = hasNextPage

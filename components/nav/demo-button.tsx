@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { createEphemeralDemoUser } from "../../app/actions/demo";
+import { Button } from "@/components/ui/button";
 
 export default function DemoButton() {
   const { isLoaded } = useAuth();
@@ -78,12 +79,12 @@ export default function DemoButton() {
   };
 
   return (
-    <button
+    <Button
       onClick={handleDemoLogin}
       disabled={loading || !isLoaded}
-      className="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 disabled:opacity-50 transition-all"
+      className="px-4 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 disabled:opacity-50 transition-all"
     >
       {loading ? "Resetting and Logging In..." : "✨ Try Live Demo"}
-    </button>
+    </Button>
   );
 }

@@ -4,6 +4,7 @@ import { MessageCircle, SendHorizontal, RefreshCcw } from "lucide-react";
 import { PostType } from "@/lib/types";
 import { useAuthStore } from "@/hooks/useAuthStore";
 import LikeButton from "./like-button";
+import RepostButton from "./repost-button";
 import { ReplyModal } from "@/components/reply-modal";
 
 const PostCardActions = ({
@@ -37,10 +38,7 @@ const PostCardActions = ({
           <MessageCircle size={16} />
           <p className="pt-px">{numComments}</p>
         </div>
-        <div className="flex items-center gap-1 text-muted-foreground text-sm">
-          <RefreshCcw size={16} />
-          <p className="pt-px">{numReposts}</p>
-        </div>
+        <RepostButton post={post} currentMongoUserId={currentMongoUserId} />
         <div className="flex items-center gap-1 text-muted-foreground text-sm">
           <SendHorizontal size={16} />
           <p className="pt-px">{numShares}</p>

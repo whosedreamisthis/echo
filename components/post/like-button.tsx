@@ -53,18 +53,21 @@ const LikeButton = ({
 
   return (
     <div className="flex items-center gap-1 text-muted-foreground text-sm ">
-      <button onClick={handleToggleLike}>
+      <button
+        onClick={handleToggleLike}
+        className=" cursor-pointer flex gap-1 items-center"
+      >
         <Heart
-          className={` cursor-pointer select-none ${
+          className={`  select-none ${
             optimisticLikes.hasLiked ? "fill-red-500 text-red-500" : ""
           }
           `}
           size={16}
         />
+        <p className="pt-px select-none w-4 text-left font-mono">
+          {optimisticLikes.count}
+        </p>
       </button>
-      <p className="pt-px select-none w-4 text-left font-mono">
-        {optimisticLikes.count}
-      </p>
     </div>
   );
 };
