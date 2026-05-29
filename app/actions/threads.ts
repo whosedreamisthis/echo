@@ -80,12 +80,15 @@ export async function getPosts(
 
     postFilter.userId = { $in: allowedObjectIds };
     repostFilter.userId = { $in: allowedObjectIds };
-  } else if (feedType === "global" && currentUserDoc) {
-    const currentUserIdObj = new mongoose.Types.ObjectId(
-      currentUserDoc._id.toString(),
-    );
-    postFilter.userId = { $ne: currentUserIdObj };
-    repostFilter.userId = { $ne: currentUserIdObj };
+  } else if (feedType === "global") {
+    // Global feed should show everything but the current user's own native posts
+    if (currentUserDoc) {
+      const currentUserIdObj = new mongoose.Types.ObjectId(
+        currentUserDoc._id.toString(),
+      );
+      postFilter.userId = { $ne: currentUserIdObj };
+      // Note: We ALLOW current user's reposts in global feed if they are relevant.
+    }
   }
 
   // 3. Fetch data across both streams
@@ -100,7 +103,10 @@ export async function getPosts(
       .limit(limitValue + 1)
       .populate({
         path: "postId",
-        populate: { path: "userId", select: "username profilePicture name" },
+        populate: [
+          { path: "userId", select: "username profilePicture name" },
+          { path: "reposts", select: "name username" }, // 👈 New: Fetch all reposters for prioritization
+        ],
       })
       .populate("userId", "name username")
       .lean(),
@@ -140,11 +146,34 @@ export async function getPosts(
         },
 
         isRepost: true,
-        repostedBy: {
-          _id: entry.userId._id.toString(),
-          name: entry.userId.name,
-          username: entry.userId.username,
-        },
+        reposts: (() => {
+          // ⚡ PRIORITIZATION ENGINE:
+          // If the post was reposted by multiple people, we want to show someone YOU FOLLOW
+          // in the header, even if the 'entry' we fetched was from a specific reposter.
+          const allReposters = entry.postId.reposts || [];
+          const followedReposter = allReposters.find((r: any) =>
+            allowedUserIdsStrings.includes(r._id?.toString()),
+          );
+
+          if (followedReposter) {
+            return [
+              {
+                _id: followedReposter._id.toString(),
+                name: followedReposter.name,
+                username: followedReposter.username,
+              },
+            ];
+          }
+
+          // Fallback to the user of the current Repost entry
+          return [
+            {
+              _id: entry.userId._id.toString(),
+              name: entry.userId.name,
+              username: entry.userId.username,
+            },
+          ];
+        })(),
       };
     })
     .filter(Boolean);
@@ -168,7 +197,7 @@ export async function getPosts(
           name: post.userId.name || "",
         },
         isRepost: false,
-        repostedBy: null,
+        reposts: post.reposts || [],
       };
     })
     .filter(Boolean);
