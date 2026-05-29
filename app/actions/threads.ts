@@ -14,21 +14,30 @@ import mongoose from "mongoose";
 // Add Follow import to the top of your existing file
 import Follow from "@/models/Follow";
 
+// app/actions/threads.ts
+
+// app/actions/threads.ts
+
 export async function getPosts(
   currentClerkUserId?: string | null,
   cursor?: { createdAt: string; id: string } | null,
-  feedType: "global" | "following" = "following", // 👈 Added option switcher
+  feedType: "global" | "following" = "following",
 ) {
   await connectDB();
   const limitValue = 20;
 
-  // 1. Determine current user context
+  // 1. Target the logged-in mongo user
   let currentUserDoc = null;
   if (currentClerkUserId) {
     currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
   }
 
-  // 2. Build filters based on feed type
+  // Guard: If on following feed but no user context, exit immediately
+  if (feedType === "following" && !currentUserDoc) {
+    return { posts: [], nextCursor: null };
+  }
+
+  // 2. Build separate query boundaries
   let postFilter: any = { parentId: null };
   let repostFilter: any = {};
 
@@ -50,65 +59,122 @@ export async function getPosts(
     repostFilter = { ...repostFilter, ...cursorQuery };
   }
 
-  // ⚡ SOCIAL GRAPH INTERSECTION LOGIC
-  if (currentUserDoc) {
-    if (feedType === "following") {
-      // A. Fetch everyone the current user follows
-      const followingRecords = await Follow.find({
-        followerId: currentUserDoc._id,
-      }).distinct("followingId");
+  let allowedUserIdsStrings: string[] = [];
 
-      // B. User should see their own updates + people they follow
-      const allowedUserIds = [currentUserDoc._id, ...followingRecords];
+  // ⚡ IRONCLAD SOCIAL GRAPH INTERSECTION
+  if (feedType === "following" && currentUserDoc) {
+    const followDocuments = await Follow.find({
+      followerId: currentUserDoc._id,
+    }).lean();
 
-      postFilter.userId = { $in: allowedUserIds };
-      repostFilter.userId = { $in: allowedUserIds };
-    } else {
-      // Fallback/Global Feed logic: Exclude current user's own activity
-      postFilter.userId = { $ne: currentUserDoc._id };
-      repostFilter.userId = { $ne: currentUserDoc._id };
-    }
+    const followedStrings = followDocuments
+      .map((f: any) => f.followingId?.toString())
+      .filter((id) => id && mongoose.Types.ObjectId.isValid(id));
+
+    // Combine into pristine string reference list
+    allowedUserIdsStrings = [currentUserDoc._id.toString(), ...followedStrings];
+
+    const allowedObjectIds = allowedUserIdsStrings.map(
+      (id) => new mongoose.Types.ObjectId(id),
+    );
+
+    postFilter.userId = { $in: allowedObjectIds };
+    repostFilter.userId = { $in: allowedObjectIds };
+  } else if (feedType === "global" && currentUserDoc) {
+    const currentUserIdObj = new mongoose.Types.ObjectId(
+      currentUserDoc._id.toString(),
+    );
+    postFilter.userId = { $ne: currentUserIdObj };
+    repostFilter.userId = { $ne: currentUserIdObj };
   }
 
-  // 3. Fetch from both collections
+  // 3. Fetch data across both streams
   const [posts, repostEntries] = await Promise.all([
     Post.find(postFilter)
       .sort({ createdAt: -1, _id: -1 })
       .limit(limitValue + 1)
-      .populate("userId", "username profilePicture")
+      .populate("userId", "username profilePicture name")
       .lean(),
     Repost.find(repostFilter)
       .sort({ createdAt: -1, _id: -1 })
       .limit(limitValue + 1)
       .populate({
         path: "postId",
-        populate: { path: "userId", select: "username profilePicture" },
+        populate: { path: "userId", select: "username profilePicture name" },
       })
-      .populate("userId", "name")
+      .populate("userId", "name username")
       .lean(),
   ]);
 
-  // 4. Transform Reposts to look like Posts for the feed
+  // 4. Transform Reposts into uniform shapes & purge entries from strangers
   const transformedReposts = repostEntries
     .map((entry: any) => {
-      if (!entry.postId) return null;
+      if (!entry.postId || !entry.userId || !entry.postId.userId) return null;
+
+      // 🚨 CRITICAL SANITIZATION ENFORCEMENT:
+      // If we are on the 'following' feed, ensure the ORIGINAL AUTHOR of the post
+      // is also someone you follow. If they aren't, drop the post completely.
+      if (feedType === "following") {
+        const originalAuthorIdStr = entry.postId.userId._id.toString();
+        if (!allowedUserIdsStrings.includes(originalAuthorIdStr)) {
+          return null; // Silently filters out strangers' items
+        }
+      }
+
+      const { _id, userId, createdAt, ...originalPostProps } = entry.postId;
+
       return {
-        ...entry.postId,
-        originalPostId: entry.postId._id.toString(),
-        createdAt: entry.createdAt,
-        _id: entry._id,
-        reposts: [
-          {
-            _id: entry.userId._id,
-            name: entry.userId.name,
-          },
-        ],
+        ...originalPostProps,
+        _id: entry._id.toString(),
+        originalPostId: _id.toString(),
+        createdAt:
+          entry.createdAt instanceof Date
+            ? entry.createdAt.toISOString()
+            : entry.createdAt,
+
+        userId: {
+          _id: userId._id.toString(),
+          username: userId.username,
+          profilePicture: userId.profilePicture,
+          name: userId.name || "",
+        },
+
+        isRepost: true,
+        repostedBy: {
+          _id: entry.userId._id.toString(),
+          name: entry.userId.name,
+          username: entry.userId.username,
+        },
       };
     })
     .filter(Boolean);
 
-  // 5. Merge, Sort, and Slice
-  const combinedFeed = [...posts, ...transformedReposts]
+  // Normalize standard primitive posts securely
+  const normalizedNativePosts = posts
+    .map((post: any) => {
+      if (!post.userId) return null;
+
+      return {
+        ...post,
+        _id: post._id.toString(),
+        createdAt:
+          post.createdAt instanceof Date
+            ? post.createdAt.toISOString()
+            : post.createdAt,
+        userId: {
+          _id: post.userId._id.toString(),
+          username: post.userId.username,
+          profilePicture: post.userId.profilePicture,
+          name: post.userId.name || "",
+        },
+        isRepost: false,
+        repostedBy: null,
+      };
+    })
+    .filter(Boolean);
+
+  // 5. Merge, Sort chronologically, and Slice
+  const combinedFeed = [...normalizedNativePosts, ...transformedReposts]
     .sort((a: any, b: any) => {
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
@@ -122,7 +188,7 @@ export async function getPosts(
     ? combinedFeed.slice(0, limitValue)
     : combinedFeed;
 
-  // 6. Handle Save States
+  // 6. Handle Save States cleanly
   let savedPostIdsStrings: string[] = [];
   if (currentUserDoc && slicedFeed.length > 0) {
     const postIdsForSaveCheck = slicedFeed.map((item: any) =>
