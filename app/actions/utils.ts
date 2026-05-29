@@ -37,6 +37,9 @@ export function getPlainPosts(posts: PostType[]) {
       originalPostId: post.originalPostId
         ? post.originalPostId.toString()
         : undefined,
+      repostEntryId: post.repostEntryId
+        ? post.repostEntryId.toString()
+        : undefined,
     };
   });
 }

@@ -34,7 +34,8 @@ const RepostButton = ({
     },
   );
 
-  const handleToggleRepost = async () => {
+  const handleToggleRepost = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!currentMongoUserId) return;
 
     // 4. Fire the optimistic update instantly
@@ -53,7 +54,10 @@ const RepostButton = ({
 
   return (
     <div className="flex items-center gap-1 text-muted-foreground text-sm ">
-      <button onClick={handleToggleRepost} className="flex gap-1 items-center">
+      <button
+        onClick={(e) => handleToggleRepost(e)}
+        className="flex gap-1 items-center"
+      >
         <RefreshCcw
           className={` cursor-pointer select-none ${
             optimisticReposts.hasReposted ? "font-semibold text-black" : ""

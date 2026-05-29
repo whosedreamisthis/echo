@@ -34,7 +34,8 @@ const LikeButton = ({
     },
   );
 
-  const handleToggleLike = async () => {
+  const handleToggleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!currentMongoUserId) return;
 
     // 4. Fire the optimistic update instantly
@@ -54,7 +55,7 @@ const LikeButton = ({
   return (
     <div className="flex items-center gap-1 text-muted-foreground text-sm ">
       <button
-        onClick={handleToggleLike}
+        onClick={(e) => handleToggleLike(e)}
         className=" cursor-pointer flex gap-1 items-center"
       >
         <Heart

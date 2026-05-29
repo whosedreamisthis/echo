@@ -142,7 +142,9 @@ const Feed = ({
     <>
       {posts.map((post, index) => (
         <div
-          key={post._id}
+          key={
+            post.repostEntryId ? `${post._id}-${post.repostEntryId}` : post._id
+          }
           className={`pt-5 pb-2 ${index !== posts.length - 1 ? "border-b" : ""}`}
         >
           <div className="px-5">

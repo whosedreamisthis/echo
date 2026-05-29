@@ -29,4 +29,5 @@ export interface PostType {
   comments?: PostType[];
   isSaved?: boolean;
   originalPostId?: string;
+  repostEntryId?: string;
 }

@@ -50,7 +50,11 @@ export default async function SavedPostsPage({ searchParams }: SavedPageProps) {
         <div className="divide-y divide-gray-100 pt-5">
           {posts.map((post: any, index) => (
             <div
-              key={post._id}
+              key={
+                post.repostEntryId
+                  ? `${post._id}-${post.repostEntryId}`
+                  : post._id
+              }
               className={`py-5  ${index === posts?.length - 1 ? "" : "border-b border-gray-200"}`}
             >
               <div className="px-5">

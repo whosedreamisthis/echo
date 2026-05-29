@@ -127,7 +127,8 @@ export async function getPosts(
 
       return {
         ...originalPostProps,
-        _id: entry._id.toString(),
+        _id: _id.toString(), // ⚡ FIX: Use the actual Post ID as the primary _id
+        repostEntryId: entry._id.toString(), // Keep Repost ID for internal reference if needed
         originalPostId: _id.toString(),
         createdAt:
           entry.createdAt instanceof Date
@@ -229,9 +230,7 @@ export async function getPosts(
   }
 
   const postsWithSaveState = slicedFeed.map((post: any) => {
-    const idToCompare = post.originalPostId
-      ? post.originalPostId
-      : post._id.toString();
+    const idToCompare = post._id.toString();
     return {
       ...post,
       isSaved: savedPostIdsStrings.includes(idToCompare),
