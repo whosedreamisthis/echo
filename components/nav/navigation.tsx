@@ -86,7 +86,7 @@ export default function Navigation({
               <button
                 key={item.label}
                 onClick={() => setIsCreateOpen(true)}
-                className={`flex items-center gap-4 ${isActive ? "text-primary font-semibold" : "text-muted-foreground"} hover:text-foreground`}
+                className={`cursor-pointer flex items-center gap-4 ${isActive ? "text-primary font-semibold" : "text-muted-foreground"} hover:text-foreground`}
               >
                 <Icon className="h-6 w-6" />
                 <span className="hidden md:inline">{item.label}</span>
@@ -103,7 +103,7 @@ export default function Navigation({
                 onClick={() => {
                   router.push(profileHref);
                 }}
-                className={`flex items-center gap-4 w-full justify-start ${
+                className={`cursor-pointer flex items-center gap-4 w-full justify-start ${
                   isActive
                     ? "text-primary font-semibold"
                     : "text-muted-foreground"
@@ -122,7 +122,7 @@ export default function Navigation({
               onClick={() => {
                 router.push(item.href ?? "/");
               }}
-              className={`flex items-center gap-4 w-full justify-start ${
+              className={`cursor-pointer  flex items-center gap-4 w-full justify-start ${
                 isActive
                   ? "text-primary font-semibold"
                   : "text-muted-foreground"
