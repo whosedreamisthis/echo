@@ -117,6 +117,33 @@ const Feed = ({
     };
   }, [cursor, isFetching, currentClerkUserId, feedType, profileUserId]);
 
+  const renderEmptyState = () => {
+    switch (feedType) {
+      case "threads":
+        return "This user hasn't posted any threads yet.";
+      case "replies":
+        return "This user hasn't replied to any threads yet.";
+      case "reposts":
+        return "This user hasn't reposted anything yet.";
+      case "following":
+        return "Threads from people you follow will show up here. Try following some users!";
+      case "global":
+      case "home":
+      default:
+        return "No threads to show right now.";
+    }
+  };
+
+  if (posts.length === 0 && !isFetching) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center py-16 px-4 text-center">
+        <p className="text-gray-400 text-sm max-w-sm font-normal leading-relaxed">
+          {renderEmptyState()}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       {posts.map((post, index) => (
