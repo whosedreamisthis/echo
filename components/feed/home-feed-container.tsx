@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useEffect, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import FeedTabs from "@/components/feed/feed-tabs";
 import Feed from "@/components/feed/feed";
 import AuthProvider from "@/components/auth-provider";
@@ -11,6 +12,7 @@ interface HomeFeedContainerProps {
   initialCursor: any;
   currentClerkUserId: string | null;
   mongoUserId: string;
+  initialTab: "global" | "following";
 }
 
 export default function HomeFeedContainer({
@@ -18,16 +20,35 @@ export default function HomeFeedContainer({
   initialCursor,
   currentClerkUserId,
   mongoUserId,
+  initialTab,
 }: HomeFeedContainerProps) {
-  const [feedType, setFeedType] = useState<"global" | "following">("following");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [feedType, setFeedType] = useState<"global" | "following">(initialTab);
   const [posts, setPosts] = useState(initialPosts);
   const [cursor, setCursor] = useState(initialCursor);
   const [isPending, startTransition] = useTransition();
 
+  // Keep internal state aligned if the URL search param changes
+  useEffect(() => {
+    const currentParam = searchParams.get("tab");
+    if (currentParam === "global" || currentParam === "following") {
+      if (currentParam !== feedType) {
+        setFeedType(currentParam);
+      }
+    }
+  }, [searchParams, feedType]);
+
   const handleTabChange = async (selectedTab: "global" | "following") => {
     setFeedType(selectedTab);
 
-    // Trigger Server Action refetch within a transition
+    // 1. Sync the URL query string instantly
+    router.push(`/?tab=${selectedTab}`, { scroll: false });
+
+    // 2. ⚡ Save choice to a cookie so clean links to "/" remember it
+    document.cookie = `home_feed_tab=${selectedTab}; path=/; max-age=31536000`;
+
     startTransition(async () => {
       const res = await getPosts(currentClerkUserId, null, selectedTab);
       setPosts(res.posts);
@@ -37,20 +58,19 @@ export default function HomeFeedContainer({
 
   return (
     <div className="w-full flex flex-col justify-center items-center">
-      {/* Pass state setter to tabs */}
-      <FeedTabs onSetTab={handleTabChange} />
+      <FeedTabs activeTab={feedType} onSetTab={handleTabChange} />
 
       <div
-        className={`w-full max-w-xl sm:rounded-2xl mb-5 overflow-hidden border border-gray-200 bg-white transition-opacity ${isPending ? "opacity-50" : "opacity-100"}`}
+        className={`w-full max-w-xl sm:rounded-2xl mb-5 overflow-hidden border border-gray-200 bg-white transition-opacity ${
+          isPending ? "opacity-50" : "opacity-100"
+        }`}
       >
         <AuthProvider userId={mongoUserId}>
-          {/* Keying the feed forces a clean state re-init on tab changes */}
           <Feed
             key={feedType}
             initialPosts={posts}
             initialCursor={cursor}
             currentClerkUserId={currentClerkUserId}
-            profileUserId={currentClerkUserId}
             feedType={feedType}
           />
         </AuthProvider>
