@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { PostType } from "@/lib/types";
 import PostCard from "./post/post-card";
-import { getPosts } from "../app/actions/threads"; // 🍉 Import target actions
+import { getPosts } from "../app/actions/threads";
 
 import { getUserProfileFeed } from "../app/actions/profile-feeds";
 
@@ -16,16 +16,22 @@ interface FeedProps {
   initialPosts: PostType[];
   initialCursor: CursorType | null;
   currentClerkUserId?: string | null;
-  // 👇 New Context Fields
-  feedType?: "home" | "threads" | "replies" | "reposts";
-  profileUserId?: string | null; // The ID of the person whose profile we are looking at
+  // ⚡ FIX: Add "global" and "following" to your union type here
+  feedType?:
+    | "home"
+    | "threads"
+    | "replies"
+    | "reposts"
+    | "global"
+    | "following";
+  profileUserId?: string | null;
 }
 
 const Feed = ({
   initialPosts,
   initialCursor,
   currentClerkUserId,
-  feedType = "home", // Defaults to main home feed
+  feedType = "home",
   profileUserId,
 }: FeedProps) => {
   const [posts, setPosts] = useState<PostType[]>(initialPosts);
@@ -34,7 +40,6 @@ const Feed = ({
 
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  // 🔄 1. Reset feed when user toggles tabs (Crucial for Profile page state updates)
   useEffect(() => {
     setPosts(initialPosts);
     setCursor(initialCursor);
@@ -51,7 +56,6 @@ const Feed = ({
           try {
             let response;
 
-            // 🎯 2. Dynamically execute the correct database query based on the active feed type
             switch (feedType) {
               case "threads":
                 response = await getUserProfileFeed(
@@ -74,9 +78,18 @@ const Feed = ({
                   "reposts",
                 );
                 break;
+              // ⚡ FIX: Forward the specific feedType ("global" or "following") to getPosts
+              case "global":
+              case "following":
+                response = await getPosts(currentClerkUserId, cursor, feedType);
+                break;
               case "home":
               default:
-                response = await getPosts(currentClerkUserId, cursor);
+                response = await getPosts(
+                  currentClerkUserId,
+                  cursor,
+                  "following",
+                );
                 break;
             }
 
@@ -93,7 +106,7 @@ const Feed = ({
           }
         }
       },
-      { threshold: 0.5 }, // 💡 UI Pro-tip: 0.5 threshold triggers slightly earlier for a smoother scroll experience
+      { threshold: 0.5 },
     );
 
     const currentTarget = observerTarget.current;
@@ -112,7 +125,6 @@ const Feed = ({
           className={`pt-5 pb-2 ${index !== posts.length - 1 ? "border-b" : ""}`}
         >
           <div className="px-5">
-            {/* If it's a repost view, you can optionally pass an indicator prop here */}
             <PostCard post={post} />
           </div>
         </div>

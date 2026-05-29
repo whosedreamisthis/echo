@@ -11,9 +11,13 @@ import { revalidatePath } from "next/cache";
 import mongoose from "mongoose";
 
 // Replace your existing getPosts function with this:
+// Add Follow import to the top of your existing file
+import Follow from "@/models/Follow";
+
 export async function getPosts(
   currentClerkUserId?: string | null,
   cursor?: { createdAt: string; id: string } | null,
+  feedType: "global" | "following" = "following", // 👈 Added option switcher
 ) {
   await connectDB();
   const limitValue = 20;
@@ -24,7 +28,7 @@ export async function getPosts(
     currentUserDoc = await User.findOne({ clerkId: currentClerkUserId });
   }
 
-  // 2. Build filters
+  // 2. Build filters based on feed type
   let postFilter: any = { parentId: null };
   let repostFilter: any = {};
 
@@ -46,10 +50,24 @@ export async function getPosts(
     repostFilter = { ...repostFilter, ...cursorQuery };
   }
 
-  // Optional: Exclude current user's own activity from global feed
+  // ⚡ SOCIAL GRAPH INTERSECTION LOGIC
   if (currentUserDoc) {
-    postFilter.userId = { $ne: currentUserDoc._id };
-    repostFilter.userId = { $ne: currentUserDoc._id };
+    if (feedType === "following") {
+      // A. Fetch everyone the current user follows
+      const followingRecords = await Follow.find({
+        followerId: currentUserDoc._id,
+      }).distinct("followingId");
+
+      // B. User should see their own updates + people they follow
+      const allowedUserIds = [currentUserDoc._id, ...followingRecords];
+
+      postFilter.userId = { $in: allowedUserIds };
+      repostFilter.userId = { $in: allowedUserIds };
+    } else {
+      // Fallback/Global Feed logic: Exclude current user's own activity
+      postFilter.userId = { $ne: currentUserDoc._id };
+      repostFilter.userId = { $ne: currentUserDoc._id };
+    }
   }
 
   // 3. Fetch from both collections
@@ -76,9 +94,9 @@ export async function getPosts(
       if (!entry.postId) return null;
       return {
         ...entry.postId,
-        originalPostId: entry.postId._id.toString(), // Keep reference for Save checks
-        createdAt: entry.createdAt, // Use repost date for sorting
-        _id: entry._id, // Use repost ID for cursor consistency
+        originalPostId: entry.postId._id.toString(),
+        createdAt: entry.createdAt,
+        _id: entry._id,
         reposts: [
           {
             _id: entry.userId._id,
@@ -95,7 +113,6 @@ export async function getPosts(
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
       if (dateB !== dateA) return dateB - dateA;
-      // Secondary sort by ID if timestamps match
       return b._id.toString().localeCompare(a._id.toString());
     })
     .slice(0, limitValue + 1);
