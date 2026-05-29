@@ -64,10 +64,7 @@ export default function Navigation({
   return (
     <>
       <nav
-        className="
-        fixed bottom-0 left-0 right-0 h-16 flex justify-around items-center px-4 z-40
-        md:sticky md:top-0 md:left-0 md:h-screen md:flex-col md:justify-start md:items-start md:p-6 md:gap-6
-        z-40"
+        className="flex justify-between items-center px-4 z-40 fixed bottom-0 left-0 right-0 h-16 md:sticky md:top-0 md:left-0 md:h-screen md:flex-col md:justify-start md:items-start md:p-6 md:gap-6"
         style={{ backgroundColor: "#f8f8f8" }}
       >
         <div className="hidden md:block text-2xl font-bold mb-4 tracking-wider">
@@ -81,13 +78,16 @@ export default function Navigation({
             ? "text-primary font-semibold"
             : "text-muted-foreground";
 
+          const targetHref =
+            item.id === "profile" ? `/@${username}` : (item.href ?? "/");
+
           // 1. Action Modals (Modals must remain buttons)
           if (item.type === "button") {
             return (
               <button
                 key={item.label}
                 onClick={() => setIsCreateOpen(true)}
-                className={`cursor-pointer flex items-center gap-4 ${activeStyles} hover:text-foreground border-none bg-transparent p-0 outline-none`}
+                className={`cursor-pointer flex items-center gap-4 w-full justify-start ${activeStyles} hover:text-foreground`}
               >
                 <Icon className="h-6 w-6" />
                 <span className="hidden md:inline">{item.label}</span>
@@ -96,8 +96,6 @@ export default function Navigation({
           }
 
           // Determine the correct destination target cleanly ahead of rendering
-          const targetHref =
-            item.id === "profile" ? `/@${username}` : (item.href ?? "/");
 
           // 2. Real Semantic Navigation Links (Home, Search, Saved, Profile)
           return (
